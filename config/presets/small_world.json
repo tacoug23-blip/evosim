@@ -1,0 +1,9 @@
+{
+	"name": "small_world",
+	"desc": "1024x1024 map with 10k spike entities, for quick interactive runs.",
+	"overrides": {
+		"world.width": 1024,
+		"world.height": 1024,
+		"spike.entity_count": 10000
+	}
+}

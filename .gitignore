@@ -1,3 +1,5 @@
 .godot/
 *.save
 batch_output/
+tools/.godot_bin
+*.tmp
