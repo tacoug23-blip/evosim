@@ -1,0 +1,9 @@
+{
+	"name": "test_tiny",
+	"desc": "256x256 map with 1500 spike entities, for unit and determinism tests.",
+	"overrides": {
+		"world.width": 256,
+		"world.height": 256,
+		"spike.entity_count": 1500
+	}
+}

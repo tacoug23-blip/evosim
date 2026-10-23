@@ -1,0 +1,11 @@
+{
+	"version": 1,
+	"note": "Substrate ids are the u8 values stored in the substrate layer; keep them contiguous from 0. allows_flora is a bitmask over flora types (flora types arrive in Phase 2; 255 = all is a placeholder). allows_water_crossing = entities may enter the cell.",
+	"substrates": [
+		{ "id": 0, "name": "water", "color": "#2c5f8e", "move_cost": 5.0, "fertility_base": 0.0,  "allows_flora": 0,   "allows_building": false, "allows_water_crossing": false, "tuned": false },
+		{ "id": 1, "name": "soil",  "color": "#5f7f3b", "move_cost": 1.0, "fertility_base": 0.8,  "allows_flora": 255, "allows_building": true,  "allows_water_crossing": true,  "tuned": false },
+		{ "id": 2, "name": "sand",  "color": "#d6c389", "move_cost": 1.5, "fertility_base": 0.15, "allows_flora": 255, "allows_building": true,  "allows_water_crossing": true,  "tuned": false },
+		{ "id": 3, "name": "mud",   "color": "#6a5236", "move_cost": 2.5, "fertility_base": 0.6,  "allows_flora": 255, "allows_building": false, "allows_water_crossing": true,  "tuned": false },
+		{ "id": 4, "name": "rock",  "color": "#7e7b76", "move_cost": 2.0, "fertility_base": 0.02, "allows_flora": 0,   "allows_building": true,  "allows_water_crossing": true,  "tuned": false }
+	]
+}
