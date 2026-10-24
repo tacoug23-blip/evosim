@@ -54,13 +54,29 @@ static func generate(world: World, params: Registry, rngs: Rng,
 	}
 
 
+## The [elevation, moisture] noise seeds generate() draws for this master seed. Stateless, so
+## other systems (the climate grid) can regenerate the same noise after a load.
+static func noise_seeds(master_seed: int) -> PackedInt64Array:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = Rng.derive_seed(master_seed, STREAM)
+	var elev := rng.randi() & 0x7FFFFFFF
+	return PackedInt64Array([elev, rng.randi() & 0x7FFFFFFF])
+
+
+## Noise image bytes. cell_scale > 1 samples the same noise field at every cell_scale-th cell
+## (a coarse grid of the full-resolution noise).
+static func noise_bytes(seed_value: int, params: Registry, prefix: String, longest: int,
+		w: int, h: int, cell_scale: float = 1.0) -> PackedByteArray:
+	return _noise_bytes(seed_value, params, prefix, longest, w, h, cell_scale)
+
+
 static func _noise_bytes(seed_value: int, params: Registry, prefix: String, longest: int,
-		w: int, h: int) -> PackedByteArray:
+		w: int, h: int, cell_scale: float = 1.0) -> PackedByteArray:
 	var n := FastNoiseLite.new()
 	n.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
 	n.fractal_type = FastNoiseLite.FRACTAL_FBM
 	n.seed = seed_value
-	n.frequency = params.get_float(prefix + ".features_per_map") / float(longest)
+	n.frequency = params.get_float(prefix + ".features_per_map") / float(longest) * cell_scale
 	n.fractal_octaves = params.get_int(prefix + ".octaves")
 	n.fractal_lacunarity = params.get_float(prefix + ".lacunarity")
 	n.fractal_gain = params.get_float(prefix + ".gain")

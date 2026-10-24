@@ -1,0 +1,12 @@
+{
+	"version": 1,
+	"note": "Item ids are the u8 values in the item_type layer; 0 = none, keep ids contiguous from 1. Phase 2 defines only harvest products; materials and cooked food arrive in later phases.",
+	"items": [
+		{ "id": 1, "name": "hay", "desc": "Cut grass." },
+		{ "id": 2, "name": "twigs", "desc": "Shrub cuttings." },
+		{ "id": 3, "name": "berries", "desc": "Berry bush fruit." },
+		{ "id": 4, "name": "wood", "desc": "Tree wood." },
+		{ "id": 5, "name": "reeds", "desc": "Cut reeds." },
+		{ "id": 6, "name": "mushrooms", "desc": "Fungus fruiting bodies." }
+	]
+}

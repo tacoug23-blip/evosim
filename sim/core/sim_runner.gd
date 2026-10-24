@@ -25,6 +25,10 @@ var _speed := SPEED_PAUSED
 var _pending_steps := 0
 var _base_tps := 1.0
 var _snapshot_requested := false
+var _snapshot_layers := PackedStringArray()
+var _commands: Array[Callable] = []
+var _probe_cell := -1
+var _probe_result := {}
 var _snapshot := {}
 var _tick := 0
 var _ticks_run := 0
@@ -75,9 +79,40 @@ func step_once() -> void:
 	_wake.post()
 
 
-func request_snapshot() -> void:
+## Ask for a render snapshot; `layers` names world layers to copy as well (see
+## SimCore.render_snapshot). Requests made before the snapshot is taken are merged.
+func request_snapshot(layers: PackedStringArray = PackedStringArray()) -> void:
 	_mutex.lock()
 	_snapshot_requested = true
+	for layer_name in layers:
+		if not _snapshot_layers.has(layer_name):
+			_snapshot_layers.append(layer_name)
+	_mutex.unlock()
+	_wake.post()
+
+
+## Ask the sim thread to read one cell between ticks (see SimCore.probe_cell). The UI must not
+## read live world layers itself: parallel phases write them.
+func request_probe(cell: int) -> void:
+	_mutex.lock()
+	_probe_cell = cell
+	_mutex.unlock()
+	_wake.post()
+
+
+## The latest probe result ({} until one arrives).
+func probe_result() -> Dictionary:
+	_mutex.lock()
+	var r := _probe_result
+	_mutex.unlock()
+	return r
+
+
+## Queue fn(core) to run on the sim thread before the next tick (also while paused). For
+## edits to sim state from the UI, such as the debug brush. A snapshot follows each batch.
+func submit(fn: Callable) -> void:
+	_mutex.lock()
+	_commands.append(fn)
 	_mutex.unlock()
 	_wake.post()
 
@@ -149,9 +184,21 @@ func _run() -> void:
 		if do_step:
 			_pending_steps -= 1
 		var want_snapshot := _snapshot_requested
+		var commands := _commands
+		var probe := _probe_cell
+		_probe_cell = -1
+		_commands = []
 		_mutex.unlock()
 
-		if want_snapshot:
+		# Commands (debug brush and the like) run here, between ticks, on the sim thread.
+		for cmd in commands:
+			cmd.call(core)
+		if probe >= 0:
+			var result: Dictionary = core.probe_cell(probe)
+			_mutex.lock()
+			_probe_result = result
+			_mutex.unlock()
+		if want_snapshot or not commands.is_empty():
 			_publish_snapshot()
 		var now := Time.get_ticks_usec()
 		if do_step or speed == SPEED_MAX:
@@ -185,8 +232,18 @@ func _do_tick() -> void:
 
 
 func _publish_snapshot() -> void:
-	var snap: Dictionary = core.render_snapshot()
 	_mutex.lock()
-	_snapshot = snap
+	var layers := _snapshot_layers
+	_snapshot_layers = PackedStringArray()
 	_snapshot_requested = false
+	_mutex.unlock()
+	var snap: Dictionary = core.render_snapshot(layers)
+	_mutex.lock()
+	# Keep layers from a snapshot the main thread has not picked up yet.
+	if not _snapshot.is_empty():
+		var old: Dictionary = _snapshot["layers"]
+		for layer_name: String in old:
+			if not snap["layers"].has(layer_name):
+				snap["layers"][layer_name] = old[layer_name]
+	_snapshot = snap
 	_mutex.unlock()

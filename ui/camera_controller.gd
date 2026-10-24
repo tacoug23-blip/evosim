@@ -1,4 +1,5 @@
-## Pan/zoom camera over the world. Drag with any mouse button to pan, wheel (or trackpad
+## Pan/zoom camera over the world. Drag with any mouse button to pan (left is taken by the
+## debug brush while it is active), wheel (or trackpad
 ## pinch) zooms toward the cursor with smoothing, WASD/arrows pan, Home fits the map.
 extends Camera2D
 
@@ -16,6 +17,8 @@ var _anchor_world := Vector2.ZERO
 var _anchor_screen := Vector2.ZERO
 var _anchored := false
 var _dragging := false
+## Returns whether a left-drag should pan (false while the debug brush owns the left button).
+var pan_with_left: Callable = func() -> bool: return true
 
 
 func setup(params: RefCounted, world_size: Vector2) -> void:
@@ -60,7 +63,9 @@ func _unhandled_input(event: InputEvent) -> void:
 			MOUSE_BUTTON_WHEEL_DOWN:
 				if mb.pressed:
 					_zoom_at(mb.position, 1.0 / _step)
-			MOUSE_BUTTON_LEFT, MOUSE_BUTTON_MIDDLE, MOUSE_BUTTON_RIGHT:
+			MOUSE_BUTTON_LEFT:
+				_dragging = mb.pressed and pan_with_left.call()
+			MOUSE_BUTTON_MIDDLE, MOUSE_BUTTON_RIGHT:
 				_dragging = mb.pressed
 	elif event is InputEventMouseMotion and _dragging:
 		position -= (event as InputEventMouseMotion).relative / zoom.x

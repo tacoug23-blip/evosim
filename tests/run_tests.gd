@@ -23,6 +23,12 @@ func _initialize() -> void:
 	var t_all := Time.get_ticks_msec()
 	for f in files:
 		var script: GDScript = load(TEST_DIR + f)
+		if script == null or not script.can_instantiate():
+			# A parse error must fail the run, not silently skip the file's tests.
+			run += 1
+			failed += 1
+			print("FAIL  %s  (script failed to load or compile)" % f.get_basename())
+			continue
 		var methods := PackedStringArray()
 		for m: Dictionary in script.get_script_method_list():
 			var method_name: String = m["name"]

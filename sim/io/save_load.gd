@@ -10,18 +10,30 @@
 ##
 ## Blocks are the world layers (World.LAYERS order) plus optional subsystem blocks (the
 ## spike's arrays). Each block is zstd-compressed when that is smaller. All integers are
-## little-endian. Bump FORMAT_VERSION whenever block meaning or layout changes.
+## little-endian. Bump FORMAT_VERSION whenever block meaning, block layout, or required header
+## content changes, and keep reading older versions where possible.
+##
+## Version history:
+##   1  Phase 1: world layers, optional spike blocks.
+##   2  Phase 2: flora, fertility, and moisture layers are live sim state; the header adds
+##      env_counters (flora totals), flora_hash, and a readable time. Version 1 files still
+##      load: their flora totals are recounted.
+##
+## Not saved, because they are pure functions of the seed and tick: in-game time, the climate
+## grid, weather, and the stateless env.sample / env.weather hash seeds. Every stateful RNG
+## stream (terrain, flora.init, spike.*) is saved in the header's "rng" map.
 extends RefCounted
 
 const Registry := preload("res://sim/params/registry.gd")
 const Rng := preload("res://sim/core/rng.gd")
-const Substrates := preload("res://sim/world/substrates.gd")
 const World := preload("res://sim/world/world.gd")
 const SimCore := preload("res://sim/core/sim_core.gd")
 const Spike := preload("res://sim/spike/spike.gd")
 
 const MAGIC := "EVOS"
-const FORMAT_VERSION := 1
+const FORMAT_VERSION := 2
+## Oldest format version this build still reads.
+const MIN_READ_VERSION := 1
 const ENCODING_RAW := 0
 const ENCODING_ZSTD := 1
 
@@ -41,11 +53,14 @@ static func save(core: RefCounted, path: String) -> Error:
 		"engine": Engine.get_version_info()["string"],
 		"seed": core.rngs.master_seed,
 		"tick": core.tick,
+		"time": core.time.describe(core.tick),
 		"width": core.world.width,
 		"height": core.world.height,
 		"params": core.params.snapshot(),
 		"rng": core.rngs.get_state(),
 		"substrates_hash": core.substrates.source_hash,
+		"flora_hash": core.flora.source_hash,
+		"env_counters": core.env.get_counters(),
 		"world_hash": core.world_hash(),
 		"spike_count": core.spike_count(),
 	}
@@ -79,8 +94,9 @@ static func load_file(path: String, verify: bool = true) -> Dictionary:
 	if f.get_length() < 12 or f.get_buffer(4).get_string_from_ascii() != MAGIC:
 		return _err("%s is not an EvoSim save" % path)
 	var version := f.get_32()
-	if version != FORMAT_VERSION:
-		return _err("save format version %d is not supported (expected %d)" % [version, FORMAT_VERSION])
+	if version < MIN_READ_VERSION or version > FORMAT_VERSION:
+		return _err("save format version %d is not supported (this build reads %d-%d)" % [
+				version, MIN_READ_VERSION, FORMAT_VERSION])
 	var header: Variant = JSON.parse_string(f.get_buffer(f.get_32()).get_string_from_utf8())
 	if typeof(header) != TYPE_DICTIONARY:
 		return _err("corrupt save header")
@@ -105,11 +121,6 @@ static func load_file(path: String, verify: bool = true) -> Dictionary:
 	if not params.load_file():
 		return _err("parameter registry failed to load: %s" % "; ".join(params.errors))
 	params.restore_snapshot(header["params"])
-	var subs := Substrates.new()
-	if not subs.load_file():
-		return _err("substrate table failed to load")
-	if subs.source_hash != header.get("substrates_hash", ""):
-		push_warning("SaveLoad: config/substrates.json changed since this save was written")
 	var rngs := Rng.new(int(header["seed"]))
 	rngs.set_state(header["rng"])
 	var world := World.new(int(header["width"]), int(header["height"]))
@@ -121,11 +132,18 @@ static func load_file(path: String, verify: bool = true) -> Dictionary:
 		return _err("world hash mismatch after load")
 
 	var core := SimCore.new()
-	core.init_from_parts(params, subs, rngs, world, int(header["tick"]))
+	if not core.init_from_parts(params, rngs, world, int(header["tick"])):
+		return _err("config tables failed to load: %s" % core.error)
+	for table: Array in [["substrates", core.substrates], ["flora", core.flora]]:
+		if table[1].source_hash != header.get(table[0] + "_hash", ""):
+			push_warning("SaveLoad: config/%s.json changed since this save was written" % table[0])
+	# Flora totals are kept incrementally; older saves without them get a full recount.
+	if not core.env.set_counters(header.get("env_counters", {})):
+		core.env.recount()
 	var spike_count := int(header.get("spike_count", 0))
 	if spike_count > 0:
 		var spike := Spike.new()
-		spike.setup(world, subs, params, rngs)
+		spike.setup(world, core.substrates, params, rngs)
 		if not spike.import_blocks(blocks, spike_count):
 			return _err("bad spike blocks")
 		core.spike = spike

@@ -141,3 +141,87 @@ tools/godot.sh --headless --path . --script res://tools/determinism_check.gd -- 
 tools/godot.sh --path . -- --autotest-render=10
 tools/godot.sh --path . -- --autotest-render=10 --spike=100000 --speed=max
 ```
+
+## Phase 2: flora and environment
+
+Same machine and engine as Phase 1. Firefox and Steam were open; no game running. The full
+4096² map; steady state after a 500-tick warmup, 200 ticks measured. Raw results are in
+`docs/perf/phase-02/perf_p2_*.json`. The Phase 1 tables above predate the environment pass
+(their code had none).
+
+### Environment pass cost
+
+The sampled environment pass (moisture, fertility, flora) at the default `env.sample_fraction`
+0.002 updates 33,536 cells per tick, so each cell is updated about every 5.2 days.
+
+Cost depends on how much of the map has plants, since sampled cells with a plant take the
+growth path.
+
+| flora state | threads | mean ms | p95 ms | per sampled cell |
+|---|---|---:|---:|---:|
+| **mature** (after 5 years: 5.49M plants, about 64% of plantable land) | 8 (headless default) | **10.15** | 10.93 | — |
+| young (500 ticks in: about 10% coverage) | 8 (headless default) | 6.78 | 7.52 | — |
+| young | 6 (app default, 2 cores left for rendering) | 7.61 | 7.96 | — |
+| young | 1 | 29.28 | 30.20 | 0.87 µs |
+
+It scales 4.3× on 8 threads. Each tick has two dispatches (even bands, then odd bands) plus
+a sequential seed step. Sources: `perf_p2_mature.json` (`--env-warmup=38400`) and
+`perf_p2_env_on_*.json`.
+
+### Tick cost with flora enabled (100k spike entities)
+
+| | mean ms | p95 ms | ticks/s | env ms | decide | propose | resolve | blocked/tick |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| | mean ms | p95 ms | ticks/s | env ms | decide | propose | resolve | blocked/tick |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| environment off | 57.22 | 61.13 | 17.5 | — | 19.07 | 5.17 | 32.98 | 19,917 |
+| environment on, **mature flora**, 8 threads | **68.69** | 72.72 | **14.6** | **10.32** | 16.83 | 5.59 | 35.93 | 18,526 |
+| environment on, young flora, 8 threads | 69.61 | 83.55 | 14.4 | 6.96 | 20.74 | 5.83 | 36.07 | 21,119 |
+| environment on, young flora, 6 threads | 70.88 | 74.02 | 14.1 | 7.89 | 23.42 | 5.98 | 33.57 | 21,119 |
+
+**Budget check (spec: added cost under 15% of the tick budget).** The budget is 100 ms per tick
+at the 10 ticks/s target. Worst case is mature flora:
+
+| measure | ms | share of budget |
+|---|---:|---:|
+| the environment pass itself (mature flora, with 100k entities) | 10.32 | **10.3%** |
+| whole-tick increase with 100k entities, mature flora | 11.47 | 11.5% |
+| whole-tick increase with 100k entities, young flora | 12.39 | 12.4% |
+
+All are under 15%. The whole-tick increase is not just the pass itself: the spike's phases also
+change cost, because their dummy field (fertility) now evolves. With young flora,
+crowding rose (21.1k blocked entities per tick vs 19.9k) and the pass evicts cache lines the
+entity phases had warm. With mature flora the spike moves more and blocks less, so decide is
+cheaper. The young 8-thread p95 (83.6 ms) was noisier than the other runs; the means are
+consistent.
+
+**GDScript decision, re-tested per the Phase 1 rule.** 100k entities with mature flora run at
+14.6 ticks/s, which is ≥ 10, so the rule says stay on GDScript. The margin over the target has
+shrunk from 1.75× to about 1.45×. Re-test after Phase 3 brings real entity logic.
+
+### Rendering with live flora
+
+Autotest at 4096²: a 10 s sweep from fit-to-map to 24 px/cell, 1600×900 window, vsync on,
+monitor at 119 Hz. The flora overlay is visible, and its two 16 MB layers are re-copied and
+uploaded at `ui.layer_refresh_hz` (1 Hz), one texture per frame.
+
+| scenario | avg fps | p95 ms | p99 ms | max ms | frames > 18 ms |
+|---|---:|---:|---:|---:|---:|
+| sim paused, refresh 1 Hz | 120.3 | 9.35 | 12.46 | 18.07 | 0 / 1165 |
+| 100k spike entities + flora, max speed (15.7 ticks/s), refresh 1 Hz | 121.2 | 8.78 | 10.96 | 13.12 | 0 / 1175 |
+| flora only, max speed (122 ticks/s), refresh 4 Hz | 121.2 | 9.43 | 11.66 | 13.80 | 0 / 1169 |
+
+Each layer refresh copies two 16 MB layers on the sim thread with `slice(0)`, about 15 ms once
+a second. That is roughly 1% of sim time at 14 ticks/s.
+
+### Reproduce (Phase 2)
+
+```bash
+tools/godot.sh --headless --path . --script res://tools/profile_spike.gd -- --env-warmup=38400 --counts=0,100000 --warmup=500 --ticks=200
+tools/godot.sh --headless --path . --script res://tools/profile_spike.gd -- --counts=0,100000 --warmup=500 --ticks=200 --set=env.enabled=false
+tools/godot.sh --headless --path . --script res://tools/flora_report.gd -- --years=10
+tools/godot.sh --headless --path . --script res://tools/harvest_experiment.gd
+```
+
+Acceptance artifacts from the 10-year run, the harvest experiment, and the full-scale
+determinism check are in `docs/reports/phase-02/`.
