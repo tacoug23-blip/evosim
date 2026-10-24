@@ -1,6 +1,9 @@
 extends "res://tests/test_base.gd"
 
 const World := preload("res://sim/world/world.gd")
+const Substrates := preload("res://sim/world/substrates.gd")
+const TerrainGen := preload("res://sim/world/terrain_gen.gd")
+const Rng := preload("res://sim/core/rng.gd")
 
 
 func test_layers_allocated_and_zeroed() -> void:
@@ -24,13 +27,26 @@ func test_terrain_same_seed_same_hash() -> void:
 
 
 func test_world_hash_is_pinned() -> void:
-	# Golden value: test_tiny preset, seed 1337. Terrain comes from FastNoiseLite, so this hash
-	# is pinned to the engine version recorded in docs/DECISIONS.md. A mismatch means terrain
-	# generation changed (code, params, substrates.json) or the engine did.
+	# Golden value: test_tiny preset, seed 1337, terrain only (pinned in Phase 1, unchanged since).
+	# Terrain comes from FastNoiseLite, so this hash is pinned to the engine version recorded in
+	# docs/DECISIONS.md. A mismatch means terrain generation changed (code, params,
+	# substrates.json) or the engine did.
+	var params := make_params("test_tiny", {"world.seed": 1337})
+	var w := World.new(params.get_int("world.width"), params.get_int("world.height"))
+	var subs := Substrates.new()
+	subs.load_file()
+	TerrainGen.generate(w, params, Rng.new(1337), subs)
+	check_eq(w.hash_state(), GOLDEN_WORLD_HASH_TINY_1337,
+			"terrain-only world hash for test_tiny / seed 1337 (engine %s, pinned on %s)" % [
+			Engine.get_version_info()["string"], PINNED_ENGINE])
+
+
+func test_initial_world_hash_is_pinned() -> void:
+	# Golden value: the full initial world (terrain + initial flora) for test_tiny / seed 1337.
+	# Pinned in Phase 2; changes if world generation or flora seeding (flora.json) changes.
 	var core := make_core("test_tiny", {"world.seed": 1337})
-	var engine: String = Engine.get_version_info()["string"]
-	check_eq(core.world_hash(), GOLDEN_WORLD_HASH_TINY_1337,
-			"world hash for test_tiny / seed 1337 (engine %s, pinned on %s)" % [engine, PINNED_ENGINE])
+	check_eq(core.world_hash(), GOLDEN_INITIAL_WORLD_HASH_TINY_1337,
+			"initial world hash for test_tiny / seed 1337 (engine %s)" % Engine.get_version_info()["string"])
 
 
 func test_terrain_is_valid_and_varied() -> void:
@@ -73,3 +89,4 @@ func _count_below(bytes: PackedByteArray, limit: int) -> int:
 
 const PINNED_ENGINE := "4.6.1-stable (official)"
 const GOLDEN_WORLD_HASH_TINY_1337 := "8ad937c4c170a5a0a0833553704110a580db7a6f5d6b7477af4da45db4a98ece"
+const GOLDEN_INITIAL_WORLD_HASH_TINY_1337 := "9c8798ab99fe7177834d157af8778d8044307d9c71a129a7d808b9484cddd32c"

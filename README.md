@@ -24,11 +24,16 @@ tools/godot.sh --path . -- --preset=small_world --spike=10000
 tools/godot.sh --headless --path . --script res://tests/run_tests.gd
 tools/godot.sh --headless --path . --script res://tools/profile_spike.gd
 tools/godot.sh --headless --path . --script res://tools/determinism_check.gd
+tools/godot.sh --headless --path . --script res://tools/flora_report.gd -- --years=10
+tools/godot.sh --headless --path . --script res://tools/harvest_experiment.gd
 ```
 
 App controls: drag to pan, wheel to zoom, WASD/arrows, Home to fit. Space pauses,
-1-4 = 1x/2x/5x/20x, 5 = max, N = single step, F5/F9 = quicksave/quickload.
+1-4 = 1x/2x/5x/20x, 5 = max, N = single step, F5/F9 = quicksave/quickload. The HUD has
+overlay toggles (terrain, flora, fertility, moisture, spike entities), season tint and day/night
+shading, the in-game clock, and a debug brush (harvest, or plant a flora type; left-drag paints
+while it is on, and the camera then pans with middle/right drag).
 Command-line options for the app are listed at the top of `ui/main.gd`.
 
-Layout: `config/` parameters, substrates, presets · `sim/` headless core · `ui/` renderer and
+Layout: `config/` parameters, substrates, flora, items, presets · `sim/` headless core · `ui/` renderer and
 HUD · `tools/` profiling and checks · `tests/` · `docs/` spec, `DECISIONS.md`, `PERF.md`.

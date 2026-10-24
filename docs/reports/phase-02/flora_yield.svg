@@ -1,0 +1,117 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="420" viewBox="0 0 960 420">
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="64" y="24" style="font-family:system-ui,sans-serif;font-size:16px;font-weight:600" fill="#222">Harvestable yield by type (biomass x seasonal yield), end of each season</text>
+<line x1="64" y1="372.0" x2="810" y2="372.0" stroke="#e5e5e5"/>
+<text x="58" y="376.0" text-anchor="end" style="font-family:system-ui,sans-serif;font-size:11px" fill="#555">0</text>
+<line x1="64" y1="305.6" x2="810" y2="305.6" stroke="#e5e5e5"/>
+<text x="58" y="309.6" text-anchor="end" style="font-family:system-ui,sans-serif;font-size:11px" fill="#555">100M</text>
+<line x1="64" y1="239.2" x2="810" y2="239.2" stroke="#e5e5e5"/>
+<text x="58" y="243.2" text-anchor="end" style="font-family:system-ui,sans-serif;font-size:11px" fill="#555">200M</text>
+<line x1="64" y1="172.8" x2="810" y2="172.8" stroke="#e5e5e5"/>
+<text x="58" y="176.8" text-anchor="end" style="font-family:system-ui,sans-serif;font-size:11px" fill="#555">300M</text>
+<line x1="64" y1="106.4" x2="810" y2="106.4" stroke="#e5e5e5"/>
+<text x="58" y="110.4" text-anchor="end" style="font-family:system-ui,sans-serif;font-size:11px" fill="#555">400M</text>
+<line x1="64" y1="40.0" x2="810" y2="40.0" stroke="#e5e5e5"/>
+<text x="58" y="44.0" text-anchor="end" style="font-family:system-ui,sans-serif;font-size:11px" fill="#555">500M</text>
+<text x="14" y="206" transform="rotate(-90 14 206)" text-anchor="middle" style="font-family:system-ui,sans-serif;font-size:12px" fill="#444">yield units</text>
+<line x1="64.0" y1="40" x2="64.0" y2="372" stroke="#f0f0f0"/>
+<text x="64.0" y="388" text-anchor="middle" style="font-family:system-ui,sans-serif;font-size:11px" fill="#555">start</text>
+<line x1="82.7" y1="40" x2="82.7" y2="372" stroke="#f0f0f0"/>
+<text x="82.7" y="388" text-anchor="middle" style="font-family:system-ui,sans-serif;font-size:11px" fill="#555">Y1</text>
+<line x1="101.3" y1="40" x2="101.3" y2="372" stroke="#f0f0f0"/>
+<text x="101.3" y="388" text-anchor="middle" style="font-family:system-ui,sans-serif;font-size:11px" fill="#555"></text>
+<line x1="120.0" y1="40" x2="120.0" y2="372" stroke="#f0f0f0"/>
+<text x="120.0" y="388" text-anchor="middle" style="font-family:system-ui,sans-serif;font-size:11px" fill="#555"></text>
+<line x1="138.6" y1="40" x2="138.6" y2="372" stroke="#f0f0f0"/>
+<text x="138.6" y="388" text-anchor="middle" style="font-family:system-ui,sans-serif;font-size:11px" fill="#555"></text>
+<line x1="157.3" y1="40" x2="157.3" y2="372" stroke="#f0f0f0"/>
+<text x="157.3" y="388" text-anchor="middle" style="font-family:system-ui,sans-serif;font-size:11px" fill="#555">Y2</text>
+<line x1="175.9" y1="40" x2="175.9" y2="372" stroke="#f0f0f0"/>
+<text x="175.9" y="388" text-anchor="middle" style="font-family:system-ui,sans-serif;font-size:11px" fill="#555"></text>
+<line x1="194.6" y1="40" x2="194.6" y2="372" stroke="#f0f0f0"/>
+<text x="194.6" y="388" text-anchor="middle" style="font-family:system-ui,sans-serif;font-size:11px" fill="#555"></text>
+<line x1="213.2" y1="40" x2="213.2" y2="372" stroke="#f0f0f0"/>
+<text x="213.2" y="388" text-anchor="middle" style="font-family:system-ui,sans-serif;font-size:11px" fill="#555"></text>
+<line x1="231.8" y1="40" x2="231.8" y2="372" stroke="#f0f0f0"/>
+<text x="231.8" y="388" text-anchor="middle" style="font-family:system-ui,sans-serif;font-size:11px" fill="#555">Y3</text>
+<line x1="250.5" y1="40" x2="250.5" y2="372" stroke="#f0f0f0"/>
+<text x="250.5" y="388" text-anchor="middle" style="font-family:system-ui,sans-serif;font-size:11px" fill="#555"></text>
+<line x1="269.1" y1="40" x2="269.1" y2="372" stroke="#f0f0f0"/>
+<text x="269.1" y="388" text-anchor="middle" style="font-family:system-ui,sans-serif;font-size:11px" fill="#555"></text>
+<line x1="287.8" y1="40" x2="287.8" y2="372" stroke="#f0f0f0"/>
+<text x="287.8" y="388" text-anchor="middle" style="font-family:system-ui,sans-serif;font-size:11px" fill="#555"></text>
+<line x1="306.4" y1="40" x2="306.4" y2="372" stroke="#f0f0f0"/>
+<text x="306.4" y="388" text-anchor="middle" style="font-family:system-ui,sans-serif;font-size:11px" fill="#555">Y4</text>
+<line x1="325.1" y1="40" x2="325.1" y2="372" stroke="#f0f0f0"/>
+<text x="325.1" y="388" text-anchor="middle" style="font-family:system-ui,sans-serif;font-size:11px" fill="#555"></text>
+<line x1="343.8" y1="40" x2="343.8" y2="372" stroke="#f0f0f0"/>
+<text x="343.8" y="388" text-anchor="middle" style="font-family:system-ui,sans-serif;font-size:11px" fill="#555"></text>
+<line x1="362.4" y1="40" x2="362.4" y2="372" stroke="#f0f0f0"/>
+<text x="362.4" y="388" text-anchor="middle" style="font-family:system-ui,sans-serif;font-size:11px" fill="#555"></text>
+<line x1="381.1" y1="40" x2="381.1" y2="372" stroke="#f0f0f0"/>
+<text x="381.1" y="388" text-anchor="middle" style="font-family:system-ui,sans-serif;font-size:11px" fill="#555">Y5</text>
+<line x1="399.7" y1="40" x2="399.7" y2="372" stroke="#f0f0f0"/>
+<text x="399.7" y="388" text-anchor="middle" style="font-family:system-ui,sans-serif;font-size:11px" fill="#555"></text>
+<line x1="418.4" y1="40" x2="418.4" y2="372" stroke="#f0f0f0"/>
+<text x="418.4" y="388" text-anchor="middle" style="font-family:system-ui,sans-serif;font-size:11px" fill="#555"></text>
+<line x1="437.0" y1="40" x2="437.0" y2="372" stroke="#f0f0f0"/>
+<text x="437.0" y="388" text-anchor="middle" style="font-family:system-ui,sans-serif;font-size:11px" fill="#555"></text>
+<line x1="455.6" y1="40" x2="455.6" y2="372" stroke="#f0f0f0"/>
+<text x="455.6" y="388" text-anchor="middle" style="font-family:system-ui,sans-serif;font-size:11px" fill="#555">Y6</text>
+<line x1="474.3" y1="40" x2="474.3" y2="372" stroke="#f0f0f0"/>
+<text x="474.3" y="388" text-anchor="middle" style="font-family:system-ui,sans-serif;font-size:11px" fill="#555"></text>
+<line x1="492.9" y1="40" x2="492.9" y2="372" stroke="#f0f0f0"/>
+<text x="492.9" y="388" text-anchor="middle" style="font-family:system-ui,sans-serif;font-size:11px" fill="#555"></text>
+<line x1="511.6" y1="40" x2="511.6" y2="372" stroke="#f0f0f0"/>
+<text x="511.6" y="388" text-anchor="middle" style="font-family:system-ui,sans-serif;font-size:11px" fill="#555"></text>
+<line x1="530.3" y1="40" x2="530.3" y2="372" stroke="#f0f0f0"/>
+<text x="530.3" y="388" text-anchor="middle" style="font-family:system-ui,sans-serif;font-size:11px" fill="#555">Y7</text>
+<line x1="548.9" y1="40" x2="548.9" y2="372" stroke="#f0f0f0"/>
+<text x="548.9" y="388" text-anchor="middle" style="font-family:system-ui,sans-serif;font-size:11px" fill="#555"></text>
+<line x1="567.5" y1="40" x2="567.5" y2="372" stroke="#f0f0f0"/>
+<text x="567.5" y="388" text-anchor="middle" style="font-family:system-ui,sans-serif;font-size:11px" fill="#555"></text>
+<line x1="586.2" y1="40" x2="586.2" y2="372" stroke="#f0f0f0"/>
+<text x="586.2" y="388" text-anchor="middle" style="font-family:system-ui,sans-serif;font-size:11px" fill="#555"></text>
+<line x1="604.9" y1="40" x2="604.9" y2="372" stroke="#f0f0f0"/>
+<text x="604.9" y="388" text-anchor="middle" style="font-family:system-ui,sans-serif;font-size:11px" fill="#555">Y8</text>
+<line x1="623.5" y1="40" x2="623.5" y2="372" stroke="#f0f0f0"/>
+<text x="623.5" y="388" text-anchor="middle" style="font-family:system-ui,sans-serif;font-size:11px" fill="#555"></text>
+<line x1="642.1" y1="40" x2="642.1" y2="372" stroke="#f0f0f0"/>
+<text x="642.1" y="388" text-anchor="middle" style="font-family:system-ui,sans-serif;font-size:11px" fill="#555"></text>
+<line x1="660.8" y1="40" x2="660.8" y2="372" stroke="#f0f0f0"/>
+<text x="660.8" y="388" text-anchor="middle" style="font-family:system-ui,sans-serif;font-size:11px" fill="#555"></text>
+<line x1="679.5" y1="40" x2="679.5" y2="372" stroke="#f0f0f0"/>
+<text x="679.5" y="388" text-anchor="middle" style="font-family:system-ui,sans-serif;font-size:11px" fill="#555">Y9</text>
+<line x1="698.1" y1="40" x2="698.1" y2="372" stroke="#f0f0f0"/>
+<text x="698.1" y="388" text-anchor="middle" style="font-family:system-ui,sans-serif;font-size:11px" fill="#555"></text>
+<line x1="716.8" y1="40" x2="716.8" y2="372" stroke="#f0f0f0"/>
+<text x="716.8" y="388" text-anchor="middle" style="font-family:system-ui,sans-serif;font-size:11px" fill="#555"></text>
+<line x1="735.4" y1="40" x2="735.4" y2="372" stroke="#f0f0f0"/>
+<text x="735.4" y="388" text-anchor="middle" style="font-family:system-ui,sans-serif;font-size:11px" fill="#555"></text>
+<line x1="754.0" y1="40" x2="754.0" y2="372" stroke="#f0f0f0"/>
+<text x="754.0" y="388" text-anchor="middle" style="font-family:system-ui,sans-serif;font-size:11px" fill="#555">Y10</text>
+<line x1="772.7" y1="40" x2="772.7" y2="372" stroke="#f0f0f0"/>
+<text x="772.7" y="388" text-anchor="middle" style="font-family:system-ui,sans-serif;font-size:11px" fill="#555"></text>
+<line x1="791.4" y1="40" x2="791.4" y2="372" stroke="#f0f0f0"/>
+<text x="791.4" y="388" text-anchor="middle" style="font-family:system-ui,sans-serif;font-size:11px" fill="#555"></text>
+<line x1="810.0" y1="40" x2="810.0" y2="372" stroke="#f0f0f0"/>
+<text x="810.0" y="388" text-anchor="middle" style="font-family:system-ui,sans-serif;font-size:11px" fill="#555"></text>
+<polyline fill="none" stroke="#85ab4d" stroke-width="2" points="64.0,372.0 82.7,351.3 101.3,301.7 120.0,296.6 138.6,364.0 157.3,289.5 175.9,183.5 194.6,210.6 213.2,355.0 231.8,244.0 250.5,131.9 269.1,183.2 287.8,352.1 306.4,237.1 325.1,131.6 343.8,186.4 362.4,352.4 381.1,242.5 399.7,143.5 418.4,196.3 437.0,353.5 455.6,249.9 474.3,156.9 492.9,206.5 511.6,354.5 530.3,257.0 548.9,169.4 567.5,216.1 586.2,355.5 604.9,263.6 623.5,180.7 642.1,224.5 660.8,356.4 679.5,269.1 698.1,190.2 716.8,231.8 735.4,357.2 754.0,274.0 772.7,198.4 791.4,238.0 810.0,357.9"/>
+<line x1="822" y1="44" x2="842" y2="44" stroke="#85ab4d" stroke-width="3"/>
+<text x="848" y="48" style="font-family:system-ui,sans-serif;font-size:12px" fill="#333">grass</text>
+<polyline fill="none" stroke="#517a35" stroke-width="2" points="64.0,372.0 82.7,368.9 101.3,365.5 120.0,362.0 138.6,368.4 157.3,365.6 175.9,358.7 194.6,352.5 213.2,365.0 231.8,360.5 250.5,350.2 269.1,341.1 287.8,361.1 306.4,355.0 325.1,341.4 343.8,329.7 362.4,357.1 381.1,349.6 399.7,332.9 418.4,318.6 437.0,353.3 455.6,344.3 474.3,324.8 492.9,308.1 511.6,349.6 530.3,339.4 548.9,317.2 567.5,298.4 586.2,346.2 604.9,334.9 623.5,310.2 642.1,289.4 660.8,343.1 679.5,330.7 698.1,303.9 716.8,281.2 735.4,340.3 754.0,326.9 772.7,298.0 791.4,273.6 810.0,337.6"/>
+<line x1="822" y1="62" x2="842" y2="62" stroke="#517a35" stroke-width="3"/>
+<text x="848" y="66" style="font-family:system-ui,sans-serif;font-size:12px" fill="#333">shrub</text>
+<polyline fill="none" stroke="#963668" stroke-width="2" points="64.0,372.0 82.7,371.7 101.3,367.5 120.0,368.4 138.6,372.0 157.3,371.4 175.9,364.0 194.6,365.8 213.2,372.0 231.8,371.0 250.5,359.9 269.1,363.0 287.8,372.0 306.4,370.7 325.1,356.0 343.8,360.2 362.4,372.0 381.1,370.3 399.7,352.0 418.4,357.5 437.0,372.0 455.6,369.9 474.3,348.3 492.9,354.9 511.6,372.0 530.3,369.6 548.9,344.6 567.5,352.4 586.2,372.0 604.9,369.2 623.5,341.1 642.1,349.9 660.8,372.0 679.5,368.9 698.1,337.6 716.8,347.5 735.4,372.0 754.0,368.6 772.7,334.0 791.4,345.1 810.0,372.0"/>
+<line x1="822" y1="80" x2="842" y2="80" stroke="#963668" stroke-width="3"/>
+<text x="848" y="84" style="font-family:system-ui,sans-serif;font-size:12px" fill="#333">berry_bush</text>
+<polyline fill="none" stroke="#274d25" stroke-width="2" points="64.0,372.0 82.7,371.3 101.3,370.8 120.0,369.6 138.6,371.2 157.3,371.1 175.9,370.5 194.6,368.9 213.2,371.0 231.8,370.9 250.5,370.2 269.1,368.2 287.8,370.8 306.4,370.7 325.1,369.8 343.8,367.6 362.4,370.6 381.1,370.4 399.7,369.5 418.4,366.9 437.0,370.3 455.6,370.2 474.3,369.1 492.9,366.2 511.6,370.1 530.3,370.0 548.9,368.8 567.5,365.4 586.2,369.9 604.9,369.7 623.5,368.4 642.1,364.7 660.8,369.6 679.5,369.5 698.1,368.0 716.8,363.9 735.4,369.4 754.0,369.2 772.7,367.6 791.4,363.1 810.0,369.1"/>
+<line x1="822" y1="98" x2="842" y2="98" stroke="#274d25" stroke-width="3"/>
+<text x="848" y="102" style="font-family:system-ui,sans-serif;font-size:12px" fill="#333">tree</text>
+<polyline fill="none" stroke="#ae9f4e" stroke-width="2" points="64.0,372.0 82.7,367.5 101.3,355.4 120.0,353.8 138.6,368.0 157.3,356.2 175.9,324.3 194.6,326.9 213.2,362.1 231.8,339.6 250.5,289.6 269.1,301.1 287.8,356.4 306.4,326.2 325.1,264.3 343.8,282.8 362.4,352.3 381.1,316.8 399.7,247.0 418.4,270.3 437.0,349.6 455.6,310.5 474.3,236.0 492.9,262.3 511.6,347.8 530.3,306.7 548.9,228.9 567.5,257.4 586.2,346.7 604.9,304.2 623.5,224.3 642.1,254.2 660.8,346.0 679.5,302.6 698.1,222.0 716.8,252.6 735.4,345.7 754.0,301.6 772.7,219.5 791.4,251.0 810.0,345.3"/>
+<line x1="822" y1="116" x2="842" y2="116" stroke="#ae9f4e" stroke-width="3"/>
+<text x="848" y="120" style="font-family:system-ui,sans-serif;font-size:12px" fill="#333">reeds</text>
+<polyline fill="none" stroke="#c1b7a8" stroke-width="2" points="64.0,372.0 82.7,370.4 101.3,371.0 120.0,364.1 138.6,369.4 157.3,363.8 175.9,367.6 194.6,346.6 213.2,364.6 231.8,353.5 250.5,362.9 269.1,330.2 287.8,360.4 306.4,345.7 325.1,359.5 343.8,319.5 362.4,357.8 381.1,340.8 399.7,357.4 418.4,313.0 437.0,356.1 455.6,337.9 474.3,356.2 492.9,309.5 511.6,355.3 530.3,336.5 548.9,355.7 567.5,308.1 586.2,354.9 604.9,336.1 623.5,355.5 642.1,307.8 660.8,354.9 679.5,336.1 698.1,355.6 716.8,308.3 735.4,355.0 754.0,336.4 772.7,355.7 791.4,309.1 810.0,355.2"/>
+<line x1="822" y1="134" x2="842" y2="134" stroke="#c1b7a8" stroke-width="3"/>
+<text x="848" y="138" style="font-family:system-ui,sans-serif;font-size:12px" fill="#333">fungus</text>
+</svg>

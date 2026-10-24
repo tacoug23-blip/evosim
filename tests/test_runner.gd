@@ -16,6 +16,33 @@ func _wait_for(runner: RefCounted, cond: Callable) -> bool:
 	return false
 
 
+func test_submit_and_probe() -> void:
+	var core := make_core("test_tiny", {"world.seed": 2})
+	var runner := SimRunner.new()
+	runner.start(core, 10.0)
+	var w: RefCounted = core.world
+	var soil: int = core.substrates.id_of("soil")
+	var cell := -1
+	for c in w.cell_count:
+		if w.substrate[c] == soil and w.flora_type[c] == 0:
+			cell = c
+			break
+	var tree: int = core.flora.id_of("tree")
+	runner.submit(func(c: RefCounted) -> void: c.env.plant(cell, tree, 200))
+	runner.request_probe(cell)
+	var p := {}
+	var deadline := Time.get_ticks_msec() + TIMEOUT_MSEC
+	while Time.get_ticks_msec() < deadline:
+		p = runner.probe_result()
+		if p.get("cell", -1) == cell:
+			break
+		OS.delay_usec(POLL_USEC)
+	runner.stop()
+	check_eq(p.get("flora", ""), "tree", "submitted edit ran on the sim thread before the probe")
+	check_eq(p.get("biomass", -1), 200, "probe reads the planted biomass")
+	check_eq(p.get("substrate", ""), "soil", "probe reads the substrate")
+
+
 func test_speed_controls() -> void:
 	var core := make_core("test_tiny", {"world.seed": 2})
 	core.spawn_spike(300)

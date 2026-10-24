@@ -4,6 +4,7 @@
 ##   godot --headless --path . --script res://tools/profile_spike.gd -- \
 ##       [--counts=1000,10000,50000,100000] [--warmup=50] [--ticks=200] [--seed=N]
 ##       [--preset=NAME] [--set=param.id=value ...] [--out=batch_output/perf.json]
+##       [--env-warmup=N]   run N entity-free ticks first so flora is mature when measuring
 extends SceneTree
 
 const Registry := preload("res://sim/params/registry.gd")
@@ -45,14 +46,29 @@ func _initialize() -> void:
 			params.get_int("spike.perception_radius"), params.get_int("spike.decision_interval"),
 			warmup, ticks])
 
+	# --env-warmup=N: run N ticks with no entities first, so flora is mature when measuring.
+	var env_warmup := int(args.get("env-warmup", 0))
+	if env_warmup > 0:
+		var tw := Time.get_ticks_msec()
+		for t in env_warmup:
+			core.step()
+		var cover := 0
+		for ft in range(1, core.flora.count() + 1):
+			cover += core.env.coverage[ft]
+		print("environment warmup: %d ticks (%s) in %.0f s; %d plants" % [env_warmup,
+				core.time.describe(core.tick), (Time.get_ticks_msec() - tw) / 1000.0, cover])
 	var rows := []
-	print("| entities | mean ms | p50 ms | p95 ms | max ms | tps (mean) | decide | propose | resolve | moves/tick | blocked/tick |")
-	print("|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|")
+	print("environment pass: %s, %d samples/tick" % ["on" if core.env.enabled else "off", core.env.samples_per_tick])
+	print("| entities | mean ms | p50 ms | p95 ms | max ms | tps (mean) | env | decide | propose | resolve | moves/tick | blocked/tick |")
+	print("|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|")
 	for n in counts:
 		core.spawn_spike(n)
+		var spike: RefCounted = core.spike
 		for t in warmup:
 			core.step()
-		core.spike.reset_timing()
+		if spike != null:
+			spike.reset_timing()
+		core.env.timing_usec = 0
 		var samples := PackedFloat64Array()
 		var moves := 0
 		var blocked := 0
@@ -60,32 +76,35 @@ func _initialize() -> void:
 			var s0 := Time.get_ticks_usec()
 			core.step()
 			samples.append((Time.get_ticks_usec() - s0) / 1000.0)
-			moves += core.spike.last_moves
-			blocked += core.spike.last_blocked
-		var inv: String = core.spike.check_invariants()
+			if spike != null:
+				moves += spike.last_moves
+				blocked += spike.last_blocked
+		var inv: String = spike.check_invariants() if spike != null else ""
 		if not inv.is_empty():
 			push_error("invariant violated at %d entities: %s" % [n, inv])
 		var sorted := samples.duplicate()
 		sorted.sort()
 		var mean := _sum(samples) / ticks
+		var timing: Dictionary = spike.timing_usec if spike != null else {"decide": 0, "propose": 0, "resolve": 0}
 		var row := {
-			"entities": core.spike.count,
+			"entities": core.spike_count(),
 			"mean_ms": mean,
 			"p50_ms": sorted[ticks / 2],
 			"p95_ms": sorted[mini(ticks - 1, int(ceil(ticks * 0.95)) - 1)],
 			"max_ms": sorted[ticks - 1],
 			"tps": 1000.0 / mean,
-			"decide_ms": core.spike.timing_usec["decide"] / 1000.0 / ticks,
-			"propose_ms": core.spike.timing_usec["propose"] / 1000.0 / ticks,
-			"resolve_ms": core.spike.timing_usec["resolve"] / 1000.0 / ticks,
+			"env_ms": core.env.timing_usec / 1000.0 / ticks,
+			"decide_ms": timing["decide"] / 1000.0 / ticks,
+			"propose_ms": timing["propose"] / 1000.0 / ticks,
+			"resolve_ms": timing["resolve"] / 1000.0 / ticks,
 			"moves_per_tick": float(moves) / ticks,
 			"blocked_per_tick": float(blocked) / ticks,
 			"invariants_ok": inv.is_empty(),
 		}
 		rows.append(row)
-		print("| %d | %.2f | %.2f | %.2f | %.2f | %.1f | %.2f | %.2f | %.2f | %.0f | %.0f |" % [
+		print("| %d | %.2f | %.2f | %.2f | %.2f | %.1f | %.2f | %.2f | %.2f | %.2f | %.0f | %.0f |" % [
 				row["entities"], row["mean_ms"], row["p50_ms"], row["p95_ms"], row["max_ms"],
-				row["tps"], row["decide_ms"], row["propose_ms"], row["resolve_ms"],
+				row["tps"], row["env_ms"], row["decide_ms"], row["propose_ms"], row["resolve_ms"],
 				row["moves_per_tick"], row["blocked_per_tick"]])
 
 	var report := {

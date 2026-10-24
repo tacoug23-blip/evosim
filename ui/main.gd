@@ -4,6 +4,7 @@
 ## Command line (after `--`):
 ##   --preset=NAME --seed=N --size=N --spike=N --speed=pause|1|2|5|20|max
 ##   --set=param.id=value                        (repeatable)
+##   --autotest-brush                            plant + harvest through the debug brush, probe, screenshot
 ##   --autotest-render[=SECONDS] [--no-vsync]    scripted pan/zoom sweep, prints frame-time
 ##                                               stats, saves screenshots, then quits
 ##     diagnostics for the autotest: --hold-zoom=Z (static view, 0 = fit), --sweep=pan|zoom,
@@ -23,6 +24,12 @@ const SHOT_DIR := "res://batch_output/"
 ## Render autotest: deepest zoom of the sweep, in screen pixels per cell.
 const AUTOTEST_MAX_ZOOM := 24.0
 const AUTOTEST_WARMUP_FRAMES := 10
+## Brush autotest layout: disc radius, gap between the plant and harvest discs, camera zoom,
+## and how many frames to wait for the sim thread and texture uploads.
+const AUTOTEST_BRUSH_RADIUS := 6
+const AUTOTEST_BRUSH_GAP := 20
+const AUTOTEST_BRUSH_ZOOM := 16.0
+const AUTOTEST_SETTLE_FRAMES := 90
 
 var params: Registry
 var core: SimCore
@@ -34,6 +41,8 @@ var _args := {}
 var _resume_speed := 1.0
 var _snapshot_interval := 0.1
 var _snapshot_timer := 0.0
+var _layer_interval := 1.0
+var _layer_timer := 0.0
 
 
 func _ready() -> void:
@@ -82,7 +91,9 @@ func _ready() -> void:
 
 	runner = SimRunner.new()
 	runner.start(core, params.get_float("sim.base_tps"))
+	view.brush.runner = runner
 	_snapshot_interval = 1.0 / params.get_float("ui.entity_snapshot_hz")
+	_layer_interval = 1.0 / params.get_float("ui.layer_refresh_hz")
 	runner.request_snapshot()
 	hud.bind(self)
 	hud.set_status("Terrain generated in %.1f s" % (core.terrain_stats["total_ms"] / 1000.0), 4.0)
@@ -90,6 +101,8 @@ func _ready() -> void:
 
 	if _args.has("autotest-render"):
 		_autotest_render()
+	elif _args.has("autotest-brush"):
+		_autotest_brush()
 
 
 func set_speed(multiplier: float) -> void:
@@ -164,9 +177,18 @@ func _process(delta: float) -> void:
 	if _snapshot_timer >= _snapshot_interval:
 		_snapshot_timer = 0.0
 		runner.request_snapshot()
+	# Dynamic layers (flora, fertility, moisture) are 16 MB each at 4096x4096: copied less often,
+	# and only the ones a visible overlay needs.
+	_layer_timer += delta
+	if _layer_timer >= _layer_interval:
+		_layer_timer = 0.0
+		var layers := view.needed_layers()
+		if not layers.is_empty():
+			runner.request_snapshot(layers)
 	var snap := runner.take_snapshot()
 	if not snap.is_empty():
 		view.on_snapshot(snap)
+	view.set_daylight(core.time.daylight(runner.stats()["tick"]))
 
 
 func _unhandled_key_input(event: InputEvent) -> void:
@@ -264,6 +286,56 @@ func _autotest_render() -> void:
 	print("RENDER_FOCUS start=%s end=%s" % [focused_at_start, DisplayServer.window_is_focused()])
 	print("RENDER_BREAKDOWN gpu_render p50=%.2fms p95=%.2fms  cpu_render p50=%.2fms p95=%.2fms" % [
 			_pct(gpu_ms, 0.5), _pct(gpu_ms, 0.95), _pct(cpu_ms, 0.5), _pct(cpu_ms, 0.95)])
+	get_tree().quit()
+
+
+## Scripted brush check: through the real brush tool, plants trees in one disc and harvests a
+## second disc, waits for the overlay refresh, prints probes of both centres, saves a
+## screenshot, quits. Calls the brush directly instead of moving the OS cursor.
+func _autotest_brush() -> void:
+	for i in AUTOTEST_WARMUP_FRAMES:
+		await get_tree().process_frame
+	var w: RefCounted = core.world
+	var soil: int = core.substrates.id_of("soil")
+	var plant_at := Vector2i(-1, -1)
+	var center := Vector2i(w.width / 2, w.height / 2)
+	# Substrate never changes after generation, so reading it here is safe.
+	for r in range(0, w.width / 2):
+		for dx in range(-r, r + 1):
+			var c := center + Vector2i(dx, -r)
+			var c2 := c + Vector2i(AUTOTEST_BRUSH_GAP, 0)
+			if plant_at.x < 0 and w.in_bounds(c2.x, c2.y) and w.substrate[w.index(c.x, c.y)] == soil \
+					and w.substrate[w.index(c2.x, c2.y)] == soil:
+				plant_at = c
+		if plant_at.x >= 0:
+			break
+	var harvest_at := plant_at + Vector2i(AUTOTEST_BRUSH_GAP, 0)
+	view.camera.set_view(Vector2(plant_at) + Vector2(AUTOTEST_BRUSH_GAP / 2.0, 0.0), AUTOTEST_BRUSH_ZOOM)
+	var brush: Node2D = view.brush
+	brush.radius = AUTOTEST_BRUSH_RADIUS
+	brush.mode = brush.Mode.PLANT
+	brush.plant_type = core.flora.id_of("tree")
+	brush.paint_at(plant_at)
+	brush.mode = brush.Mode.HARVEST
+	brush.paint_at(harvest_at)
+	brush.mode = brush.Mode.OFF
+	runner.request_snapshot(view.needed_layers())
+	for i in AUTOTEST_SETTLE_FRAMES:
+		await get_tree().process_frame
+	for cell: Vector2i in [plant_at, harvest_at]:
+		runner.request_probe(w.index(cell.x, cell.y))
+		var p := {}
+		for i in AUTOTEST_SETTLE_FRAMES:
+			await get_tree().process_frame
+			p = runner.probe_result()
+			if p.get("cell", -1) == w.index(cell.x, cell.y):
+				break
+		print("BRUSH_TEST %s at %s: %s" % ["plant tree" if cell == plant_at else "harvest",
+				cell, ("%s biomass %d" % [p["flora"], p["biomass"]]) if p.get("flora", "") != "" else "no plant"])
+	await RenderingServer.frame_post_draw
+	var path := SHOT_DIR + "brush_test.png"
+	get_viewport().get_texture().get_image().save_png(path)
+	print("screenshot %s" % ProjectSettings.globalize_path(path))
 	get_tree().quit()
 
 

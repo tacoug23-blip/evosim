@@ -127,3 +127,147 @@ Non-obvious choices and why. Newest phase at the bottom. If a decision here conf
 - **Minimal custom test runner** (`tests/run_tests.gd`), not GUT, so there is no addon dependency.
 - **Godot binary path:** `tools/godot.sh` uses `$GODOT`, then the untracked one-line file
   `tools/.godot_bin`, then `godot` on PATH.
+
+## Phase 2
+
+### Time
+
+- **Time is a pure function of the tick.** Tick 0 is midnight at the start of spring, year 0, so
+  time needs no saved state. Defaults: 4 ticks/hour, 24 hours/day, 20 days/season, which gives
+  96 ticks/day and 7,680 ticks/year (12.8 minutes per year at 1x). A year is always four seasons,
+  because `seasonal_yield[4]` is fixed by the spec.
+- **Daylight share per season** (`time.daylight.*`) sets day length. `daylight(tick)` (night_light
+  to 1, with linear twilight ramps) is the day/night factor exposed to rendering and to later
+  systems (visibility, energy loss).
+
+### Sampled environment pass
+
+- **One pass updates moisture, fertility, and flora** for each sampled cell
+  (`sim/env/env_system.gd`): one random access per cell instead of three. `env.sample_fraction`
+  0.002 gives 33.5k cells per tick at 4096², so each cell is updated about every 500 ticks
+  (5.2 days). Every per-day rate is scaled by that expected interval, so the sample fraction
+  changes noise and cost, not dynamics.
+- **Day/night enters growth through the season's daylight share**, integrated over the update
+  interval: growth uses `day_growth * share + night_growth * (1 - share)`. A cell updated at
+  midnight still gets its five days of light. Long summer days grow more; fungus (night_growth 1.0)
+  favours long nights.
+- **Deterministic under threads, by bands.** The map is split into `env.bands` (64) horizontal
+  bands. Even bands run in parallel, then odd bands. A band writes only its own cells. Its only
+  outside reads are moisture neighbours on its edge rows, which lie in bands idle that pass.
+  - Each band draws from its own xorshift32 sequence, seeded by `Rng.hash3(seed, tick, band)`.
+  - Seeds are collected per band and applied sequentially afterwards, in band order.
+  - The band count is a parameter, not derived from the thread count, so results are
+    identical for any thread count (tested at 1, 3, and 8 threads).
+- **Copy-on-write guard.** Before dispatch, `Parallel.ensure_unique()` writes once to each layer
+  the bands will write. If anything shares the buffer, the copy happens on the sim thread, not
+  racing inside workers.
+  - Measured on 4.6.1: `duplicate()` is lazy (the next write pays a 16 MB copy, 3.3 ms).
+    `Image.create_from_data` shares the buffer while the image lives. `slice(0)` is a real copy
+    (7.6 ms per 16 MB).
+  - Group tasks go through `sim/core/parallel.gd`, which always submits high-priority (see
+    Phase 1).
+
+### Moisture
+
+- **The moisture layer is dynamic.** Each sampled land cell relaxes toward a target and diffuses
+  toward its 4 neighbours. Water cells are never updated and stay at 255, so they act as sources
+  and the shore is wetter.
+  - Target = climate grid + season offset + rain.
+  - The climate grid is the terrain's own moisture noise, sampled every `env.climate_block` (16)
+    cells and mapped to [0.12, 0.8]. It is regenerated from the seed after a load and never
+    saved (`TerrainGen.noise_seeds()` reproduces the terrain's noise seeds statelessly).
+- **Weather is map-wide rainy days.** A day is rainy if `hash(seed, day) < rain_chance` (0.3).
+  The rain boost is `rain_moisture` times the share of rainy days in the last 7, so wet and dry
+  spells show up without per-cell weather state. Turn it off with `env.rain_enabled`.
+
+### Fertility
+
+- **Fertility relaxes toward a natural level**: substrate `fertility_base` × moisture, the same
+  formula terrain generation uses. The rate is 1% of the gap per day. Growth consumes fertility
+  (`fertility_consumption` per biomass grown), and harvest drains it
+  (`flora.harvest_fertility_drain`, 0.5 per biomass removed). The regeneration stands in for
+  nutrient cycling until decomposition exists (Phase 3), and is what lets fertility recover.
+
+### Flora rules
+
+- **Growth per update:**
+  rate × dt × light × seasonal_growth × moisture response × fertility response × stall.
+  - Moisture response is linear up to `moisture_need`.
+  - Fertility response is linear up to `flora.fertility_saturation`.
+  - Stall is the growth-stall hook: a lookup by `structure_material`, 1.0 everywhere until
+    Phase 7 fills it from `materials.json`.
+  - Below `moisture_need × wilt_fraction` a plant wilts; below `flora.starve_fertility` it
+    starves. Either way it loses biomass instead of growing.
+- **Seeding happens only when mature and only while the season's growth is above 0.** A winter
+  stall stops seeding too. Seeds land on a random cell within `seed_spread_radius`, and take
+  only on an empty, allowed cell that is wet enough not to wilt.
+- **Janzen-Connell crowding** (`flora.crowding_penalty`, 0.2): each same-type neighbour adds 20% to
+  a seed's failure chance. Without it, one cell per plant makes this a lottery: whichever type has
+  the best seeding-to-mortality ratio takes all shared habitat. Fungus took 50%, or grass took 63%,
+  depending on rates.
+- **Fixed point:** growth factors are in 1/1024 units, and biomass increments use stochastic
+  rounding from the band's xorshift sequence.
+- **Fields beyond the spec's list in `config/flora.json`:** color, max_biomass, maturity,
+  seed_chance, mortality, seasonal_growth[4], day_growth, night_growth, initial_cover.
+  - `substrate_mask` is a list of substrate names.
+  - A type may grow on a substrate only if both its `substrate_mask` and the substrate's
+    `allows_flora` bit (id − 1) allow it.
+- **Known dynamic: slow succession.** Total coverage settles within a few years. Long-lived woody
+  types (shrub, berry bush, tree) keep gaining share slowly at grass's expense, which is classic
+  succession without disturbance. Grazing and harvest by entities (Phase 3) are the natural
+  counterweight. Until then the flora report prints per-type drift. All values are
+  `tuned: false`.
+
+### Items and harvest
+
+- **`config/items.json`** defines item ids for the `item_type` layer. Phase 2 has only harvest
+  products.
+- **`harvest(cell, amount)`** returns `{item, name, qty, nutrition, removed, type}`:
+  - `qty` = removed biomass × `seasonal_yield[current season]`
+  - `nutrition` = qty × the type's nutrition
+  - A plant harvested to zero dies.
+- **`harvest`, `plant`, and `apply_brush` are not thread-safe.** Call them between ticks or from a
+  sequential phase. The UI's debug brush goes through `SimRunner.submit()`, which runs commands
+  on the sim thread between ticks.
+- **Flora totals (coverage, biomass per type) are kept incrementally** and saved in the save header.
+  A load without them recounts. Tests check that the incremental totals match a full recount.
+
+### Save format version 2
+
+- **`SaveLoad.FORMAT_VERSION` is now 2** (Phase 1 wrote 1). Flora, fertility, and moisture are live
+  sim state, and the header adds the flora totals, a hash of `flora.json`, and a readable time.
+  The loader still reads version 1 (tested); it recounts flora totals for those files.
+- **What is and is not saved.** Every stateful RNG stream (terrain, flora.init, spike.*) is saved in
+  the header's `rng` map. In-game time, weather, the climate grid, and the env.sample /
+  env.weather hash seeds are pure functions of the seed and tick, so they are rebuilt on load,
+  not saved. A test checks that each rebuilds identically.
+
+### Golden hashes
+
+- **The terrain-only golden hash is unchanged from Phase 1** (`8ad937c4…`, Godot 4.6.1-stable).
+  World generation now also plants initial flora, so the full initial world got its own golden
+  hash (`test_initial_world_hash_is_pinned`, `9c8798ab…`).
+
+### Renderer and UI
+
+- **The UI never reads live world layers.** Parallel phases now write them.
+  - Overlays get `slice(0)` copies in snapshots taken on the sim thread, for visible dynamic
+    layers only, at `ui.layer_refresh_hz` (1 Hz).
+  - WorldView uploads at most one 16 MB texture per frame.
+  - The HUD's cell readout is a probe the sim thread answers between ticks
+    (`SimRunner.request_probe`).
+- **Flora overlay:** color by type, opacity by biomass relative to the type's max (premultiplied, so
+  zoomed-out averaging blends correctly), optional season tint.
+- **Day/night shading** is a CanvasModulate tinted by `daylight(tick)`. It affects the world but not
+  the HUD.
+- **Debug brush:** harvest everything, or plant mature flora of a type, in a disc. While a brush is
+  active, left-drag paints and the camera pans with middle or right drag.
+
+### Tooling
+
+- **The test runner now fails on a test file that does not compile**; before, it skipped it
+  silently.
+- **New tools:** `tools/flora_report.gd` (multi-year coverage, yield, and winter-stall report, CSV
+  and SVG), `tools/harvest_experiment.gd` (fertility under harvest versus a control region),
+  `tools/svg_chart.gd` (no plotting libraries on the dev machine), and `tools/thread_hash_check.gd`
+  (runs the same seed at several thread counts and prints the hashes).

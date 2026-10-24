@@ -1,0 +1,13 @@
+
+run 1: 4096x4096 world in 6.2 s, 100000 entities, 1000 ticks, mean 62.5 ms/tick (first 100: 57.9, last 100: 66.0)
+  world hash  69dd5358c60c29ee2ee5dbc1fdc577ba2288b1d7d59e90f226c1258791299fcd
+  entity hash d0fe1f7fe866198c79d2fef0707aa281418f02e4aba17d6c21bd85eff09f8b07
+  one-per-cell: ok (checked every 1 ticks)
+run 2: 4096x4096 world in 5.8 s, 100000 entities, 1000 ticks, mean 62.9 ms/tick (first 100: 54.7, last 100: 67.3)
+  world hash  69dd5358c60c29ee2ee5dbc1fdc577ba2288b1d7d59e90f226c1258791299fcd
+  entity hash d0fe1f7fe866198c79d2fef0707aa281418f02e4aba17d6c21bd85eff09f8b07
+  one-per-cell: ok (checked every 1 ticks)
+same seed -> identical world hash: true
+same seed -> identical entity hash after 1000 ticks: true
+save 1.6 s (17.9 MB), load+verify 1.7 s -> identical world and full hash: true
+RESULT: PASS

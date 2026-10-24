@@ -55,7 +55,7 @@ Struct-of-arrays layers over the 4096 x 4096 grid:
 | structure_type | u8 | 0 = none. Wall, floor, hearth, storage, and so on. |
 | structure_material | u8 | Index into the materials table |
 | structure_hp | u16 | |
-| item_type / item_qty | u8 / u8 | Dropped or stored resources |
+| item_type / item_qty | u8 / u8 | Dropped or stored resources. Item ids from `config/items.json` (0 = none). |
 | corpse_id | u32 | Index into the corpse table, 0 = none |
 | occupancy | u32 | Entity ID or 0. Used for one-per-cell. |
 | tribe_territory | u16 | Optional overlay, derived, not authoritative |
@@ -65,9 +65,11 @@ Separate lower-resolution grids:
 
 Substrate properties (config-driven): `move_cost`, `fertility_base`, `allows_flora` (bitmask of flora types), `allows_building`, `allows_water_crossing`.
 
-Flora properties: `substrate_mask`, `growth_rate`, `seed_spread_radius`, `seasonal_yield[4]`, `harvest_item`, `nutrition`. New plants spawn on nearby valid tiles. Yield varies by season. Growth requires fertility and moisture; harvest and growth drain fertility.
+Flora properties (`config/flora.json`): `substrate_mask`, `growth_rate`, `seed_spread_radius`, `seasonal_yield[4]`, `harvest_item`, `nutrition`, `fertility_consumption`, `moisture_need`, plus (added in Phase 2) `color`, `max_biomass`, `maturity` (share of max biomass at which a plant seeds), `seed_chance` (per day while mature), `mortality` (probability of dying within a year), `seasonal_growth[4]` (per-season growth multiplier; 0 = stalled, which also stops seeding), `day_growth` / `night_growth` (growth weight in daylight vs darkness, applied through the season's day length), and `initial_cover`. A type grows on a substrate only if both its `substrate_mask` and the substrate's `allows_flora` bit allow it. New plants spawn on nearby valid tiles. Yield varies by season. Growth requires fertility and moisture; harvest and growth drain fertility. Fertility regenerates toward a natural level set by substrate and moisture.
 
-Time: tick -> hour -> day -> season -> year. Day/night modifies visibility, energy loss, and flora growth. Seasons modify flora yield and growth, and optionally energy loss.
+Seed-crowding rule (Phase 2): a seed lands on a random cell within `seed_spread_radius` and establishes only on an empty, allowed cell that is not too dry. Each neighbouring plant of the same type (of 8) adds `flora.crowding_penalty` to the chance the seed fails (a Janzen-Connell effect). This keeps one type from monopolising shared habitat.
+
+Time: tick -> hour -> day -> season -> year. Day/night modifies visibility, energy loss, and flora growth. Seasons modify flora yield and growth, and optionally energy loss. Defaults (registry, `tuned: false`): 4 ticks per hour, 24 hours per day, 20 days per season, 4 seasons per year (fixed), so 96 ticks per day and 7,680 ticks per year (12.8 minutes per year at 1x). Day length varies by season (`time.daylight.*`). Time is a pure function of the tick, with tick 0 = midnight, first day of spring, year 1.
 
 ---
 
@@ -270,7 +272,7 @@ Levers if over budget: multithreading, spatial hash tuning, decision interval, p
 ```
 evosim/
   project.godot
-  config/            parameters.json, substrates.json, flora.json, materials.json,
+  config/            parameters.json, substrates.json, flora.json, items.json, materials.json,
                      genes.json, recipes.json, presets/
   sim/               core: world, entities, genome, decisions, tribes, ...  (headless-capable)
   ui/                renderer, overlays, inspector, charts, signal tools
