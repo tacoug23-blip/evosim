@@ -29,17 +29,23 @@ var _snapshot_layers := PackedStringArray()
 var _commands: Array[Callable] = []
 var _probe_cell := -1
 var _probe_result := {}
+var _entity_probe := Vector2i(-1, -1)
+var _entity_result := {}
 var _snapshot := {}
 var _tick := 0
 var _ticks_run := 0
 var _last_tick_usec := 0
 var _tick_usec_ema := 0.0
+var _entities := 0
+var _corpses := 0
 
 
 func start(p_core: RefCounted, base_tps: float) -> void:
 	core = p_core
 	_base_tps = base_tps
 	_tick = core.tick
+	_entities = core.entities.count
+	_corpses = core.corpses.count
 	_quit = false
 	_thread = Thread.new()
 	_thread.start(_run)
@@ -100,6 +106,26 @@ func request_probe(cell: int) -> void:
 	_wake.post()
 
 
+## Ask once for the inspector view of entity (slot, generation), answered between ticks.
+## Request again to refresh; slot -1 clears the last result.
+func request_entity_probe(slot: int, generation: int) -> void:
+	_mutex.lock()
+	_entity_probe = Vector2i(slot, generation)
+	if slot < 0:
+		_entity_result = {}
+	_mutex.unlock()
+	_wake.post()
+
+
+## Latest entity probe: {"requested": Vector2i(slot, gen), ...describe() fields}, or {} until
+## one arrives. Only "requested" is set if the entity is no longer alive.
+func entity_probe_result() -> Dictionary:
+	_mutex.lock()
+	var r := _entity_result
+	_mutex.unlock()
+	return r
+
+
 ## The latest probe result ({} until one arrives).
 func probe_result() -> Dictionary:
 	_mutex.lock()
@@ -148,6 +174,8 @@ func release(new_core: RefCounted = null) -> void:
 	if new_core != null:
 		core = new_core
 		_tick = core.tick
+		_entities = core.entities.count
+		_corpses = core.corpses.count
 	_held = false
 	_mutex.unlock()
 	_wake.post()
@@ -161,6 +189,8 @@ func stats() -> Dictionary:
 		"speed": _speed,
 		"last_tick_ms": _last_tick_usec / 1000.0,
 		"tick_ms_ema": _tick_usec_ema / 1000.0,
+		"entities": _entities,
+		"corpses": _corpses,
 	}
 	_mutex.unlock()
 	return s
@@ -186,6 +216,8 @@ func _run() -> void:
 		var want_snapshot := _snapshot_requested
 		var commands := _commands
 		var probe := _probe_cell
+		var entity_probe := _entity_probe
+		_entity_probe = Vector2i(-1, -1)
 		_probe_cell = -1
 		_commands = []
 		_mutex.unlock()
@@ -193,6 +225,17 @@ func _run() -> void:
 		# Commands (debug brush and the like) run here, between ticks, on the sim thread.
 		for cmd in commands:
 			cmd.call(core)
+		if not commands.is_empty():
+			_mutex.lock()
+			_entities = core.entities.count
+			_corpses = core.corpses.count
+			_mutex.unlock()
+		if entity_probe.x >= 0:
+			var er: Dictionary = core.probe_entity(entity_probe.x, entity_probe.y)
+			er["requested"] = entity_probe
+			_mutex.lock()
+			_entity_result = er
+			_mutex.unlock()
 		if probe >= 0:
 			var result: Dictionary = core.probe_cell(probe)
 			_mutex.lock()
@@ -225,6 +268,8 @@ func _do_tick() -> void:
 	var dt := Time.get_ticks_usec() - t0
 	_mutex.lock()
 	_tick = core.tick
+	_entities = core.entities.count
+	_corpses = core.corpses.count
 	_ticks_run += 1
 	_last_tick_usec = dt
 	_tick_usec_ema = dt if _ticks_run == 1 else lerpf(_tick_usec_ema, dt, EMA_WEIGHT)

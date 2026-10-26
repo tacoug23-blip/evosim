@@ -1,0 +1,48 @@
+Godot Engine v4.6.1.stable.official.14d19694e - https://godotengine.org
+
+abundant: 5000 founders, 11 deaths in 60 days
+deaths on a cell that already held a corpse: 0; deaths while carrying a corpse: 0; pickups 0; drops by living carriers 0
+distinct death cells: 10
+slot 4609 died day 6.55 age 629 ticks, energy before last tick 0.59, start energy 566, meals 0, last bite never, rock, plants r5 0 (free 0), r10 0
+slot 4539 died day 7.34 age 705 ticks, energy before last tick 0.21, start energy 634, meals 0, last bite never, rock, plants r5 0 (free 0), r10 0
+slot 4709 died day 9.15 age 878 ticks, energy before last tick 0.97, start energy 768, meals 0, last bite never, rock, plants r5 0 (free 0), r10 0
+slot 4602 died day 9.58 age 920 ticks, energy before last tick 0.04, start energy 743, meals 0, last bite never, rock, plants r5 0 (free 0), r10 0
+slot 4628 died day 9.71 age 932 ticks, energy before last tick 1.22, start energy 751, meals 0, last bite never, rock, plants r5 0 (free 0), r10 0
+slot 4573 died day 13.41 age 1287 ticks, energy before last tick 0.58, start energy 916, meals 0, last bite never, rock, plants r5 0 (free 0), r10 0
+slot 4712 died day 13.48 age 1294 ticks, energy before last tick 0.07, start energy 910, meals 0, last bite never, rock, plants r5 0 (free 0), r10 0
+slot 4645 died day 14.48 age 1390 ticks, energy before last tick 0.22, start energy 990, meals 0, last bite never, rock, plants r5 0 (free 0), r10 0
+slot 4733 died day 15.07 age 1447 ticks, energy before last tick 0.61, start energy 981, meals 0, last bite never, rock, plants r5 0 (free 0), r10 0
+slot 4593 died day 17.28 age 1659 ticks, energy before last tick 1.04, start energy 745, meals 1, last bite 13.6 days before, rock, plants r5 0 (free 0), r10 0
+slot 808 died day 17.49 age 1679 ticks, energy before last tick 0.14, start energy 522, meals 2, last bite 14.1 days before, sand, plants r5 0 (free 0), r10 0
+
+history of slot 4609 (last 16 action changes: tick, action, energy, x, y, target distance, neighbours):
+  day 0.01  wander     energy  565.1  at (1243, 1260)  target -  neighbours 6
+
+history of slot 4573 (last 16 action changes: tick, action, energy, x, y, target distance, neighbours):
+  day 0.01  wander     energy  915.3  at (1240, 1269)  target -  neighbours 10
+  day 0.18  rest       energy  901.1  at (1244, 1273)  target -  neighbours 4
+  day 0.39  wander     energy  891.7  at (1244, 1273)  target -  neighbours 9
+  day 0.49  rest       energy  883.3  at (1246, 1272)  target -  neighbours 6
+  day 4.76  wander     energy  694.5  at (1246, 1272)  target -  neighbours 3
+  day 4.86  rest       energy  685.3  at (1249, 1275)  target -  neighbours 2
+  day 5.28  wander     energy  666.7  at (1249, 1275)  target -  neighbours 2
+  day 5.39  rest       energy  658.3  at (1251, 1273)  target -  neighbours 1
+  day 5.91  wander     energy  635.1  at (1251, 1273)  target -  neighbours 1
+  day 6.01  rest       energy  625.9  at (1254, 1276)  target -  neighbours 0
+  day 6.32  wander     energy  611.9  at (1254, 1276)  target -  neighbours 0
+
+history of slot 808 (last 16 action changes: tick, action, energy, x, y, target distance, neighbours):
+  day 0.01  forage     energy  521.7  at (2796, 3417)  target 2  neighbours 12
+  day 0.11  none       energy  725.3  at (2796, 3416)  target 1  neighbours 12
+  day 0.13  wander     energy  724.6  at (2796, 3416)  target -  neighbours 12
+  day 0.23  rest       energy  716.1  at (2799, 3413)  target -  neighbours 7
+  day 0.54  wander     energy  702.0  at (2799, 3413)  target -  neighbours 9
+  day 0.65  rest       energy  693.5  at (2802, 3410)  target -  neighbours 7
+  day 3.35  forage     energy  602.4  at (2802, 3410)  target 1  neighbours 4
+  day 3.42  none       energy  751.8  at (2802, 3410)  target 1  neighbours 4
+  day 3.43  rest       energy  751.4  at (2802, 3410)  target -  neighbours 4
+  day 9.81  wander     energy  468.5  at (2802, 3411)  target -  neighbours 3
+  day 10.02  rest       energy  451.2  at (2806, 3409)  target -  neighbours 4
+  day 10.54  wander     energy  427.9  at (2806, 3409)  target -  neighbours 4
+  day 10.75  rest       energy  410.0  at (2809, 3408)  target -  neighbours 5
+  day 14.81  wander     energy  230.3  at (2809, 3408)  target -  neighbours 1

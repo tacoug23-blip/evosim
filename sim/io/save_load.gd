@@ -8,8 +8,8 @@
 ##   blocks                    name (u16 len + UTF-8), encoding u8, raw size u64,
 ##                             stored size u64, data
 ##
-## Blocks are the world layers (World.LAYERS order) plus optional subsystem blocks (the
-## spike's arrays). Each block is zstd-compressed when that is smaller. All integers are
+## Blocks are the world layers (World.LAYERS order) plus subsystem blocks (the
+## entity and corpse arrays). Each block is zstd-compressed when that is smaller. All integers are
 ## little-endian. Bump FORMAT_VERSION whenever block meaning, block layout, or required header
 ## content changes, and keep reading older versions where possible.
 ##
@@ -18,24 +18,31 @@
 ##   2  Phase 2: flora, fertility, and moisture layers are live sim state; the header adds
 ##      env_counters (flora totals), flora_hash, and a readable time. Version 1 files still
 ##      load: their flora totals are recounted.
+##   3  Phase 3: entity and corpse blocks (entity.*, corpse.*) and their header sections,
+##      including the derived energy costs (entity.base_burn, rest_burn, sense_burn,
+##      move_cost); the Phase 1 spike is gone. Versions 1-2 still load (no entities; spike
+##      blocks skipped, occupancy cleared).
+##   4  Phase 3 search: entity.search_leg and entity.search_from (the search sweep). Version 3
+##      files still load, with no sweep running.
 ##
 ## Not saved, because they are pure functions of the seed and tick: in-game time, the climate
 ## grid, weather, and the stateless env.sample / env.weather hash seeds. Every stateful RNG
-## stream (terrain, flora.init, spike.*) is saved in the header's "rng" map.
+## stream (terrain, flora.init, founders, entity.resolve) is saved in the header's "rng" map.
 extends RefCounted
 
 const Registry := preload("res://sim/params/registry.gd")
 const Rng := preload("res://sim/core/rng.gd")
 const World := preload("res://sim/world/world.gd")
 const SimCore := preload("res://sim/core/sim_core.gd")
-const Spike := preload("res://sim/spike/spike.gd")
 
 const MAGIC := "EVOS"
-const FORMAT_VERSION := 2
+const FORMAT_VERSION := 4
 ## Oldest format version this build still reads.
 const MIN_READ_VERSION := 1
 const ENCODING_RAW := 0
 const ENCODING_ZSTD := 1
+## Largest decoded block accepted (a 4096x4096 int32 layer is 64 MB; this leaves headroom).
+const MAX_BLOCK_BYTES := 1 << 31
 
 ## Tests set this to keep expected failures out of the log.
 static var quiet := false
@@ -46,8 +53,8 @@ static func save(core: RefCounted, path: String) -> Error:
 	var blocks := {}
 	for layer_name in World.layer_names():
 		blocks["world." + layer_name] = core.world.layer_bytes(layer_name)
-	if core.spike != null:
-		blocks.merge(core.spike.export_blocks())
+	blocks.merge(core.entities.export_blocks())
+	blocks.merge(core.corpses.export_blocks())
 	var header := {
 		"format_version": FORMAT_VERSION,
 		"engine": Engine.get_version_info()["string"],
@@ -62,7 +69,9 @@ static func save(core: RefCounted, path: String) -> Error:
 		"flora_hash": core.flora.source_hash,
 		"env_counters": core.env.get_counters(),
 		"world_hash": core.world_hash(),
-		"spike_count": core.spike_count(),
+		"genes_hash": core.genes.source_hash,
+		"entities": core.entities.header(),
+		"corpses": core.corpses.header(),
 	}
 	var tmp_path := path + ".tmp"
 	var f := FileAccess.open(tmp_path, FileAccess.WRITE)
@@ -108,6 +117,10 @@ static func load_file(path: String, verify: bool = true) -> Dictionary:
 		var encoding := f.get_8()
 		var raw_size := f.get_64()
 		var stored_size := f.get_64()
+		# Check sizes against the file before allocating: a corrupt size field must not trigger a
+		# multi-terabyte allocation.
+		if stored_size > f.get_length() - f.get_position() or raw_size > MAX_BLOCK_BYTES:
+			return _err("corrupt or truncated save (block %s)" % block_name)
 		var data := f.get_buffer(stored_size)
 		if data.size() != stored_size:
 			return _err("truncated save (block %s)" % block_name)
@@ -140,13 +153,20 @@ static func load_file(path: String, verify: bool = true) -> Dictionary:
 	# Flora totals are kept incrementally; older saves without them get a full recount.
 	if not core.env.set_counters(header.get("env_counters", {})):
 		core.env.recount()
-	var spike_count := int(header.get("spike_count", 0))
-	if spike_count > 0:
-		var spike := Spike.new()
-		spike.setup(world, core.substrates, params, rngs)
-		if not spike.import_blocks(blocks, spike_count):
-			return _err("bad spike blocks")
-		core.spike = spike
+	if int(header.get("spike_count", 0)) > 0:
+		push_warning("SaveLoad: this save has Phase 1 spike entities; they no longer exist and are skipped")
+	if not header.has("entities"):
+		# Pre-v3 saves: occupancy may hold spike ids with no entity behind them. Through a typed
+		# local: `(x as PackedInt32Array).fill()` would fill a temporary copy.
+		var occ: PackedInt32Array = core.world.occupancy
+		occ.fill(0)
+	if header.has("entities"):
+		if header.get("genes_hash", "") != core.genes.source_hash:
+			push_warning("SaveLoad: config/genes.json changed since this save was written")
+		if not core.entities.import_blocks(blocks, header["entities"]):
+			return _err("bad entity blocks")
+		if not core.corpses.import_blocks(blocks, header.get("corpses", {})):
+			return _err("bad corpse blocks")
 	return {"core": core, "error": ""}
 
 

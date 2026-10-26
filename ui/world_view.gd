@@ -3,12 +3,18 @@
 extends Node2D
 
 signal overlay_registered(overlay: Node2D)
+## Left click (press and release without dragging) on a cell, while the brush is off.
+signal cell_clicked(cell: Vector2i)
 
 const CameraController := preload("res://ui/camera_controller.gd")
 const LayerOverlay := preload("res://ui/overlays/layer_overlay.gd")
 const FloraOverlay := preload("res://ui/overlays/flora_overlay.gd")
-const SpikeEntityOverlay := preload("res://ui/overlays/spike_entity_overlay.gd")
+const EntityOverlay := preload("res://ui/overlays/entity_overlay.gd")
 const BrushTool := preload("res://ui/brush_tool.gd")
+const SelectionRing := preload("res://ui/selection_ring.gd")
+
+## Mouse travel (screen pixels) under which a left press+release counts as a click.
+const CLICK_SLOP_PX := 5.0
 
 ## Darkest tint at full night when day/night shading is on. Presentation only.
 const NIGHT_TINT := Color(0.22, 0.26, 0.45)
@@ -16,12 +22,16 @@ const NIGHT_TINT := Color(0.22, 0.26, 0.45)
 var camera: CameraController
 var brush: BrushTool
 var flora_overlay: FloraOverlay
+var entity_overlay: EntityOverlay
+var selection: SelectionRing
 var overlays: Array[Node2D] = []
 var daynight_enabled := false
 
 var _core: RefCounted
 var _params: RefCounted
 var _shade := CanvasModulate.new()
+var _press_pos := Vector2.ZERO
+var _pressed := false
 
 
 func setup(core: RefCounted, params: RefCounted) -> void:
@@ -41,7 +51,11 @@ func setup(core: RefCounted, params: RefCounted) -> void:
 			LayerOverlay.Mode.RAMP, Color(0.35, 0.2, 0.05, 0.0), Color(0.55, 1.0, 0.15, 1.0), true), false)
 	register_overlay(LayerOverlay.new("moisture", "Moisture", "moisture",
 			LayerOverlay.Mode.RAMP, Color(0.8, 0.6, 0.2, 0.0), Color(0.1, 0.45, 1.0, 1.0), true), false)
-	register_overlay(SpikeEntityOverlay.new(), true)
+	entity_overlay = EntityOverlay.new()
+	register_overlay(entity_overlay, true)
+	selection = SelectionRing.new()
+	selection.view = self
+	add_child(selection)
 	# Added after the camera so it sees left clicks first.
 	brush = BrushTool.new()
 	brush.view = self
@@ -98,3 +112,16 @@ func _process(_delta: float) -> void:
 	for o in overlays:  # at most one texture upload per frame
 		if o.flush_upload():
 			break
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	var mb := event as InputEventMouseButton
+	if mb == null or mb.button_index != MOUSE_BUTTON_LEFT or brush.is_active():
+		return
+	if mb.pressed:
+		_pressed = true
+		_press_pos = mb.position
+	elif _pressed:
+		_pressed = false
+		if mb.position.distance_to(_press_pos) <= CLICK_SLOP_PX:
+			cell_clicked.emit(cell_under_mouse())

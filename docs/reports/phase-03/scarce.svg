@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="420" viewBox="0 0 960 420">
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="64" y="24" style="font-family:system-ui,sans-serif;font-size:16px;font-weight:600" fill="#222">No flora: 5000 founders starve; corpses decay into the soil</text>
+<line x1="64" y1="372.0" x2="810" y2="372.0" stroke="#e5e5e5"/>
+<text x="58" y="376.0" text-anchor="end" style="font-family:system-ui,sans-serif;font-size:11px" fill="#555">0</text>
+<line x1="64" y1="305.6" x2="810" y2="305.6" stroke="#e5e5e5"/>
+<text x="58" y="309.6" text-anchor="end" style="font-family:system-ui,sans-serif;font-size:11px" fill="#555">40</text>
+<line x1="64" y1="239.2" x2="810" y2="239.2" stroke="#e5e5e5"/>
+<text x="58" y="243.2" text-anchor="end" style="font-family:system-ui,sans-serif;font-size:11px" fill="#555">80</text>
+<line x1="64" y1="172.8" x2="810" y2="172.8" stroke="#e5e5e5"/>
+<text x="58" y="176.8" text-anchor="end" style="font-family:system-ui,sans-serif;font-size:11px" fill="#555">120</text>
+<line x1="64" y1="106.4" x2="810" y2="106.4" stroke="#e5e5e5"/>
+<text x="58" y="110.4" text-anchor="end" style="font-family:system-ui,sans-serif;font-size:11px" fill="#555">160</text>
+<line x1="64" y1="40.0" x2="810" y2="40.0" stroke="#e5e5e5"/>
+<text x="58" y="44.0" text-anchor="end" style="font-family:system-ui,sans-serif;font-size:11px" fill="#555">200</text>
+<text x="14" y="206" transform="rotate(-90 14 206)" text-anchor="middle" style="font-family:system-ui,sans-serif;font-size:12px" fill="#444">% of founders / fertility (0-255)</text>
+<line x1="64.0" y1="40" x2="64.0" y2="372" stroke="#f0f0f0"/>
+<text x="64.0" y="388" text-anchor="middle" style="font-family:system-ui,sans-serif;font-size:11px" fill="#555">day 0</text>
+<line x1="90.6" y1="40" x2="90.6" y2="372" stroke="#f0f0f0"/>
+<text x="90.6" y="388" text-anchor="middle" style="font-family:system-ui,sans-serif;font-size:11px" fill="#555"></text>
+<line x1="117.3" y1="40" x2="117.3" y2="372" stroke="#f0f0f0"/>
+<text x="117.3" y="388" text-anchor="middle" style="font-family:system-ui,sans-serif;font-size:11px" fill="#555"></text>
+<line x1="143.9" y1="40" x2="143.9" y2="372" stroke="#f0f0f0"/>
+<text x="143.9" y="388" text-anchor="middle" style="font-family:system-ui,sans-serif;font-size:11px" fill="#555"></text>
+<line x1="170.6" y1="40" x2="170.6" y2="372" stroke="#f0f0f0"/>
+<text x="170.6" y="388" text-anchor="middle" style="font-family:system-ui,sans-serif;font-size:11px" fill="#555"></text>
+<line x1="197.2" y1="40" x2="197.2" y2="372" stroke="#f0f0f0"/>
+<text x="197.2" y="388" text-anchor="middle" style="font-family:system-ui,sans-serif;font-size:11px" fill="#555">day 5</text>
+<line x1="223.9" y1="40" x2="223.9" y2="372" stroke="#f0f0f0"/>
+<text x="223.9" y="388" text-anchor="middle" style="font-family:system-ui,sans-serif;font-size:11px" fill="#555"></text>
+<line x1="250.5" y1="40" x2="250.5" y2="372" stroke="#f0f0f0"/>
+<text x="250.5" y="388" text-anchor="middle" style="font-family:system-ui,sans-serif;font-size:11px" fill="#555"></text>
+<line x1="277.1" y1="40" x2="277.1" y2="372" stroke="#f0f0f0"/>
+<text x="277.1" y="388" text-anchor="middle" style="font-family:system-ui,sans-serif;font-size:11px" fill="#555"></text>
+<line x1="303.8" y1="40" x2="303.8" y2="372" stroke="#f0f0f0"/>
+<text x="303.8" y="388" text-anchor="middle" style="font-family:system-ui,sans-serif;font-size:11px" fill="#555"></text>
+<line x1="330.4" y1="40" x2="330.4" y2="372" stroke="#f0f0f0"/>
+<text x="330.4" y="388" text-anchor="middle" style="font-family:system-ui,sans-serif;font-size:11px" fill="#555">day 10</text>
+<line x1="357.1" y1="40" x2="357.1" y2="372" stroke="#f0f0f0"/>
+<text x="357.1" y="388" text-anchor="middle" style="font-family:system-ui,sans-serif;font-size:11px" fill="#555"></text>
+<line x1="383.7" y1="40" x2="383.7" y2="372" stroke="#f0f0f0"/>
+<text x="383.7" y="388" text-anchor="middle" style="font-family:system-ui,sans-serif;font-size:11px" fill="#555"></text>
+<line x1="410.4" y1="40" x2="410.4" y2="372" stroke="#f0f0f0"/>
+<text x="410.4" y="388" text-anchor="middle" style="font-family:system-ui,sans-serif;font-size:11px" fill="#555"></text>
+<line x1="437.0" y1="40" x2="437.0" y2="372" stroke="#f0f0f0"/>
+<text x="437.0" y="388" text-anchor="middle" style="font-family:system-ui,sans-serif;font-size:11px" fill="#555"></text>
+<line x1="463.6" y1="40" x2="463.6" y2="372" stroke="#f0f0f0"/>
+<text x="463.6" y="388" text-anchor="middle" style="font-family:system-ui,sans-serif;font-size:11px" fill="#555">day 15</text>
+<line x1="490.3" y1="40" x2="490.3" y2="372" stroke="#f0f0f0"/>
+<text x="490.3" y="388" text-anchor="middle" style="font-family:system-ui,sans-serif;font-size:11px" fill="#555"></text>
+<line x1="516.9" y1="40" x2="516.9" y2="372" stroke="#f0f0f0"/>
+<text x="516.9" y="388" text-anchor="middle" style="font-family:system-ui,sans-serif;font-size:11px" fill="#555"></text>
+<line x1="543.6" y1="40" x2="543.6" y2="372" stroke="#f0f0f0"/>
+<text x="543.6" y="388" text-anchor="middle" style="font-family:system-ui,sans-serif;font-size:11px" fill="#555"></text>
+<line x1="570.2" y1="40" x2="570.2" y2="372" stroke="#f0f0f0"/>
+<text x="570.2" y="388" text-anchor="middle" style="font-family:system-ui,sans-serif;font-size:11px" fill="#555"></text>
+<line x1="596.9" y1="40" x2="596.9" y2="372" stroke="#f0f0f0"/>
+<text x="596.9" y="388" text-anchor="middle" style="font-family:system-ui,sans-serif;font-size:11px" fill="#555">day 20</text>
+<line x1="623.5" y1="40" x2="623.5" y2="372" stroke="#f0f0f0"/>
+<text x="623.5" y="388" text-anchor="middle" style="font-family:system-ui,sans-serif;font-size:11px" fill="#555"></text>
+<line x1="650.1" y1="40" x2="650.1" y2="372" stroke="#f0f0f0"/>
+<text x="650.1" y="388" text-anchor="middle" style="font-family:system-ui,sans-serif;font-size:11px" fill="#555"></text>
+<line x1="676.8" y1="40" x2="676.8" y2="372" stroke="#f0f0f0"/>
+<text x="676.8" y="388" text-anchor="middle" style="font-family:system-ui,sans-serif;font-size:11px" fill="#555"></text>
+<line x1="703.4" y1="40" x2="703.4" y2="372" stroke="#f0f0f0"/>
+<text x="703.4" y="388" text-anchor="middle" style="font-family:system-ui,sans-serif;font-size:11px" fill="#555"></text>
+<line x1="730.1" y1="40" x2="730.1" y2="372" stroke="#f0f0f0"/>
+<text x="730.1" y="388" text-anchor="middle" style="font-family:system-ui,sans-serif;font-size:11px" fill="#555">day 25</text>
+<line x1="756.7" y1="40" x2="756.7" y2="372" stroke="#f0f0f0"/>
+<text x="756.7" y="388" text-anchor="middle" style="font-family:system-ui,sans-serif;font-size:11px" fill="#555"></text>
+<line x1="783.4" y1="40" x2="783.4" y2="372" stroke="#f0f0f0"/>
+<text x="783.4" y="388" text-anchor="middle" style="font-family:system-ui,sans-serif;font-size:11px" fill="#555"></text>
+<line x1="810.0" y1="40" x2="810.0" y2="372" stroke="#f0f0f0"/>
+<text x="810.0" y="388" text-anchor="middle" style="font-family:system-ui,sans-serif;font-size:11px" fill="#555"></text>
+<polyline fill="none" stroke="#3373cc" stroke-width="2" points="64.0,206.0 90.6,206.0 117.3,206.0 143.9,206.0 170.6,206.0 197.2,206.0 223.9,212.1 250.5,239.8 277.1,267.3 303.8,289.1 330.4,302.3 357.1,314.9 383.7,328.2 410.4,340.6 437.0,354.6 463.6,367.9 490.3,372.0 516.9,372.0 543.6,372.0 570.2,372.0 596.9,372.0 623.5,372.0 650.1,372.0 676.8,372.0 703.4,372.0 730.1,372.0 756.7,372.0 783.4,372.0 810.0,372.0"/>
+<line x1="822" y1="44" x2="842" y2="44" stroke="#3373cc" stroke-width="3"/>
+<text x="848" y="48" style="font-family:system-ui,sans-serif;font-size:12px" fill="#333">alive (% of founders)</text>
+<polyline fill="none" stroke="#734d33" stroke-width="2" points="64.0,372.0 90.6,372.0 117.3,372.0 143.9,372.0 170.6,372.0 197.2,372.0 223.9,365.9 250.5,338.3 277.1,310.9 303.8,289.2 330.4,276.0 357.1,263.4 383.7,250.2 410.4,237.8 437.0,224.1 463.6,210.9 490.3,220.3 516.9,248.3 543.6,274.0 570.2,292.7 596.9,305.5 623.5,318.5 650.1,331.5 676.8,344.3 703.4,357.8 730.1,370.1 756.7,372.0 783.4,372.0 810.0,372.0"/>
+<line x1="822" y1="62" x2="842" y2="62" stroke="#734d33" stroke-width="3"/>
+<text x="848" y="66" style="font-family:system-ui,sans-serif;font-size:12px" fill="#333">corpses (% of founders)</text>
+<polyline fill="none" stroke="#4db34d" stroke-width="2" points="64.0,372.0 90.6,372.0 117.3,372.0 143.9,372.0 170.6,372.0 197.2,372.0 223.9,208.7 250.5,212.8 277.1,220.5 303.8,220.3 330.4,220.6 357.1,220.3 383.7,220.5 410.4,220.1 437.0,219.4 463.6,218.7 490.3,216.0 516.9,213.2 543.6,211.2 570.2,209.8 596.9,208.5 623.5,207.2 650.1,205.9 676.8,204.6 703.4,203.5 730.1,203.2 756.7,203.3 783.4,203.4 810.0,203.5"/>
+<line x1="822" y1="80" x2="842" y2="80" stroke="#4db34d" stroke-width="3"/>
+<text x="848" y="84" style="font-family:system-ui,sans-serif;font-size:12px" fill="#333">fertility around corpse sites</text>
+</svg>

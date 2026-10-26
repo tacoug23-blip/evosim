@@ -45,7 +45,7 @@ func test_submit_and_probe() -> void:
 
 func test_speed_controls() -> void:
 	var core := make_core("test_tiny", {"world.seed": 2})
-	core.spawn_spike(300)
+	var spawned: int = core.spawn_founders()["spawned"]
 	var runner := SimRunner.new()
 	runner.start(core, 10.0)
 
@@ -81,7 +81,8 @@ func test_speed_controls() -> void:
 	while snap.is_empty() and Time.get_ticks_msec() < deadline:
 		snap = runner.take_snapshot()
 		OS.delay_usec(POLL_USEC)
-	check_eq(snap.get("spike_count", -1), 300, "snapshot delivered while paused")
-	check_eq((snap.get("spike_x", PackedByteArray()) as PackedByteArray).size(), 300 * 4, "snapshot positions")
+	check_eq(snap.get("entity_count", -1), core.entities.count, "snapshot delivered while paused")
+	check(spawned > 0, "founders spawned")
+	check_eq((snap.get("entity_x", PackedByteArray()) as PackedByteArray).size(), core.entities.capacity * 4, "snapshot positions")
 	runner.stop()
-	check_eq(core.spike.check_invariants(), "", "invariants after threaded run")
+	check_eq(core.entities.check_invariants(), "", "invariants after threaded run")

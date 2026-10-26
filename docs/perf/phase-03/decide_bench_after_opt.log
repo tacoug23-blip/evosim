@@ -1,0 +1,6 @@
+Godot Engine v4.6.1.stable.official.14d19694e - https://godotengine.org
+state: Year 6, Summer day 1, 20:00, 97981 entities
+decide_one: first pass 17.94 us, best 17.75 us per decision (single thread)
+chosen: forage 1062, seek food 19, wander 1563, rest 95337
+output hash 2e597e00a2d69a17ca3c17d604321622fdb51899c7579e1635529e7c6dd598c2
+200 ticks: 58.84 ms/tick (17.0 ticks/s); env 9.33, decide 37.09, propose 6.26, deaths 0.01, resolve 4.49, interact 1.41, corpses 0.20 ms

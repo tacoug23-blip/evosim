@@ -2,11 +2,14 @@
 ## world view and HUD.
 ##
 ## Command line (after `--`):
-##   --preset=NAME --seed=N --size=N --spike=N --speed=pause|1|2|5|20|max
+##   --preset=NAME --seed=N --size=N --speed=pause|1|2|5|20|max
+##   --founders[=GROUPS]                         spawn founder groups at start (founders.* params)
 ##   --set=param.id=value                        (repeatable)
 ##   --autotest-brush                            plant + harvest through the debug brush, probe, screenshot
 ##   --autotest-render[=SECONDS] [--no-vsync]    scripted pan/zoom sweep, prints frame-time
 ##                                               stats, saves screenshots, then quits
+##   --autotest-inspect                          select an entity through the click path, check
+##                                               the inspector, colour modes, founders clear/spawn
 ##     diagnostics for the autotest: --hold-zoom=Z (static view, 0 = fit), --sweep=pan|zoom,
 ##     --no-hud, --hide-overlays
 extends Node
@@ -17,6 +20,7 @@ const SimRunner := preload("res://sim/core/sim_runner.gd")
 const SaveLoad := preload("res://sim/io/save_load.gd")
 const WorldView := preload("res://ui/world_view.gd")
 const Hud := preload("res://ui/hud.gd")
+const Inspector := preload("res://ui/inspector.gd")
 
 const SAVE_PATH := "user://saves/quicksave.evosave"
 const KEY_SPEEDS := {KEY_1: 1.0, KEY_2: 2.0, KEY_3: 5.0, KEY_4: 20.0, KEY_5: SimRunner.SPEED_MAX}
@@ -36,6 +40,7 @@ var core: SimCore
 var runner: SimRunner
 var view: WorldView
 var hud: Hud
+var inspector: Inspector
 
 var _args := {}
 var _resume_speed := 1.0
@@ -43,6 +48,10 @@ var _snapshot_interval := 0.1
 var _snapshot_timer := 0.0
 var _layer_interval := 1.0
 var _layer_timer := 0.0
+var _inspect_timer := 0.0
+var _pending_select := -1
+## Last snapshot handed to the view (autotests read entity positions from it).
+var _last_snap := {}
 
 
 func _ready() -> void:
@@ -79,7 +88,8 @@ func _ready() -> void:
 	if not core.init_new(params):
 		_fatal(core.error)
 		return
-	core.spawn_spike(int(_args.get("spike", 0)))
+	if _args.has("founders"):
+		core.spawn_founders({} if _args["founders"] == "true" else {"groups": int(_args["founders"])})
 
 	view = WorldView.new()
 	add_child(view)
@@ -92,6 +102,11 @@ func _ready() -> void:
 	runner = SimRunner.new()
 	runner.start(core, params.get_float("sim.base_tps"))
 	view.brush.runner = runner
+	inspector = Inspector.new()
+	add_child(inspector)
+	inspector.ticks_per_day = core.time.ticks_per_day
+	inspector.ticks_per_hour = core.time.ticks_per_hour
+	view.cell_clicked.connect(_on_cell_clicked)
 	_snapshot_interval = 1.0 / params.get_float("ui.entity_snapshot_hz")
 	_layer_interval = 1.0 / params.get_float("ui.layer_refresh_hz")
 	runner.request_snapshot()
@@ -103,6 +118,8 @@ func _ready() -> void:
 		_autotest_render()
 	elif _args.has("autotest-brush"):
 		_autotest_brush()
+	elif _args.has("autotest-inspect"):
+		_autotest_inspect()
 
 
 func set_speed(multiplier: float) -> void:
@@ -162,12 +179,54 @@ func quick_load() -> void:
 	hud.set_status("Loaded tick %d" % core.tick, 4.0)
 
 
-func respawn_spike(n: int) -> void:
-	runner.hold()
-	core.spawn_spike(n)
-	runner.release()
+## Spawn founder groups (founders.* params) between ticks, on the sim thread.
+func spawn_founders() -> void:
+	runner.submit(func(c: RefCounted) -> void: c.spawn_founders())
 	runner.request_snapshot()
-	hud.set_status("Spawned %d spike entities" % core.spike_count(), 4.0)
+	hud.set_status("Spawning founder groups", 3.0)
+
+
+## Remove every entity (no corpses) between ticks.
+func clear_entities() -> void:
+	runner.submit(func(c: RefCounted) -> void: c.entities.clear())
+	runner.request_snapshot()
+	inspector.clear()
+	view.selection.hide_ring()
+
+
+func _on_cell_clicked(cell: Vector2i) -> void:
+	if not core.world.in_bounds(cell.x, cell.y):
+		return
+	_pending_select = core.world.index(cell.x, cell.y)
+	runner.request_probe(_pending_select)
+
+
+## Pick up the entity under a clicked cell once its probe arrives; keep the inspector fresh.
+func _update_inspector(refresh: bool) -> void:
+	if _pending_select >= 0:
+		var p: Dictionary = runner.probe_result()
+		if p.get("cell", -1) == _pending_select:
+			_pending_select = -1
+			if p["occupant"] > 0:
+				inspector.select(p["occupant"] - 1, p["occupant_generation"])
+				runner.request_entity_probe(inspector.selected_slot, inspector.selected_generation)
+			else:
+				inspector.clear()
+				view.selection.hide_ring()
+	if inspector.selected_slot < 0:
+		return
+	if refresh:
+		runner.request_entity_probe(inspector.selected_slot, inspector.selected_generation)
+	var er: Dictionary = runner.entity_probe_result()
+	if er.get("requested", Vector2i(-2, -2)) != Vector2i(inspector.selected_slot, inspector.selected_generation):
+		return
+	var d := er.duplicate()
+	d.erase("requested")
+	inspector.show_data(d)
+	if d.is_empty():
+		view.selection.hide_ring()
+	else:
+		view.selection.show_at(Vector2i(d["x"], d["y"]))
 
 
 func _process(delta: float) -> void:
@@ -188,7 +247,13 @@ func _process(delta: float) -> void:
 	var snap := runner.take_snapshot()
 	if not snap.is_empty():
 		view.on_snapshot(snap)
+		_last_snap = snap
 	view.set_daylight(core.time.daylight(runner.stats()["tick"]))
+	_inspect_timer += delta
+	var refresh := _inspect_timer >= 1.0 / params.get_float("ui.hud_refresh_hz")
+	if refresh:
+		_inspect_timer = 0.0
+	_update_inspector(refresh)
 
 
 func _unhandled_key_input(event: InputEvent) -> void:
@@ -278,10 +343,10 @@ func _autotest_render() -> void:
 	for v in frame_ms:
 		if v > 1000.0 / 55.0:
 			slow += 1
-	print("RENDER_TEST world=%dx%d frames=%d avg_fps=%.1f p50=%.2fms p95=%.2fms p99=%.2fms max=%.2fms frames_over_18ms=%d vsync=%s spike=%d sim_speed=%s ticks_during_test=%d" % [
+	print("RENDER_TEST world=%dx%d frames=%d avg_fps=%.1f p50=%.2fms p95=%.2fms p99=%.2fms max=%.2fms frames_over_18ms=%d vsync=%s entities=%d sim_speed=%s ticks_during_test=%d" % [
 			core.world.width, core.world.height, n, 1000.0 * n / total, sorted[n / 2],
 			sorted[int(n * 0.95)], sorted[int(n * 0.99)], sorted[n - 1], slow,
-			"off" if _args.has("no-vsync") else "on", core.spike_count(), _args.get("speed", "pause"),
+			"off" if _args.has("no-vsync") else "on", runner.stats()["entities"], _args.get("speed", "pause"),
 			runner.stats()["ticks_run"]])
 	print("RENDER_FOCUS start=%s end=%s" % [focused_at_start, DisplayServer.window_is_focused()])
 	print("RENDER_BREAKDOWN gpu_render p50=%.2fms p95=%.2fms  cpu_render p50=%.2fms p95=%.2fms" % [
@@ -337,6 +402,104 @@ func _autotest_brush() -> void:
 	get_viewport().get_texture().get_image().save_png(path)
 	print("screenshot %s" % ProjectSettings.globalize_path(path))
 	get_tree().quit()
+
+
+## Scripted inspector check: lets founders run, pauses, picks a live entity from the latest
+## snapshot and sends its cell through the same signal a mouse click emits, then checks the
+## inspector against its utility scores, screenshots both colour modes, follows the entity for a
+## few seconds, and finally clears and respawns founders through the HUD actions.
+func _autotest_inspect() -> void:
+	for i in AUTOTEST_WARMUP_FRAMES:
+		await get_tree().process_frame
+	if runner.stats()["entities"] == 0:
+		spawn_founders()
+	set_speed(20.0)
+	for i in AUTOTEST_SETTLE_FRAMES * 2:
+		await get_tree().process_frame
+	set_speed(SimRunner.SPEED_PAUSED)
+	_last_snap = {}
+	runner.request_snapshot()
+	while _last_snap.is_empty():
+		await get_tree().process_frame
+	var xs: PackedInt32Array = _last_snap["entity_x"].to_int32_array()
+	var ys: PackedInt32Array = _last_snap["entity_y"].to_int32_array()
+	var cell := Vector2i(-1, -1)
+	for i in xs.size():
+		if xs[i] >= 0:
+			cell = Vector2i(xs[i], ys[i])
+			break
+	if cell.x < 0:
+		print("INSPECT_TEST FAIL no live entity in the snapshot")
+		get_tree().quit(1)
+		return
+	view.camera.set_view(Vector2(cell) + Vector2(0.5, 0.5), AUTOTEST_BRUSH_ZOOM)
+	view.cell_clicked.emit(cell)
+	var ok := await _await_inspector()
+	var d := inspector.data
+	var best := ""
+	var best_score := 0.0
+	if ok:
+		for n: String in d["scores"]:
+			if n != "none" and d["scores"][n] > best_score:
+				best_score = d["scores"][n]
+				best = n
+	ok = ok and best == d["decided"] and Vector2i(d["x"], d["y"]) == cell
+	print("INSPECT_TEST %s clicked %s: %s" % ["PASS" if ok else "FAIL", cell, "entity %d gen %d, action %s, decided %s, top score %s %.3f, energy %.0f/%.0f, %d neighbours, costs base %.3f rest %.3f sense %.3f move %.3f" % [
+			d["id"], d["generation"], d["action"], d["decided"], best, best_score, d["energy"], d["max_energy"],
+			d["neighbors"], d["costs"]["base_burn"], d["costs"]["rest_burn"], d["costs"]["sense_burn"], d["costs"]["move_cost"]]
+			if not d.is_empty() else "inspector empty"])
+	var females := 0
+	for i in xs.size():
+		if xs[i] >= 0 and _last_snap["entity_sex"][i] == 1:
+			females += 1
+	print("INSPECT_SEXES %d female of %d" % [females, _last_snap["entity_count"]])
+	for mode in 2:
+		hud.choose_color_mode(mode)
+		for i in 10:
+			await get_tree().process_frame
+		await RenderingServer.frame_post_draw
+		var path := SHOT_DIR + "inspect_%s.png" % ["energy", "sex"][mode]
+		get_viewport().get_texture().get_image().save_png(path)
+		print("screenshot %s" % ProjectSettings.globalize_path(path))
+	hud.choose_color_mode(0)
+	# Follow it: the panel refreshes from new probes while the sim runs.
+	var age0: float = d.get("age_ticks", 0)
+	set_speed(20.0)
+	for i in AUTOTEST_SETTLE_FRAMES * 2:
+		await get_tree().process_frame
+	set_speed(SimRunner.SPEED_PAUSED)
+	await _await_inspector()
+	var d2 := inspector.data
+	print("INSPECT_FOLLOW %s: age %d -> %d ticks, now %s at (%d, %d)" % ["PASS" if d2.get("age_ticks", 0) > age0 else "FAIL",
+			age0, d2.get("age_ticks", 0), d2.get("action", "?"), d2.get("x", -1), d2.get("y", -1)])
+	var before: int = runner.stats()["entities"]
+	clear_entities()
+	await _await_stat("entities", func(v: int) -> bool: return v == 0)
+	var cleared: int = runner.stats()["entities"]
+	spawn_founders()
+	await _await_stat("entities", func(v: int) -> bool: return v > 0)
+	var respawned: int = runner.stats()["entities"]
+	print("FOUNDERS_TEST %s: %d entities -> clear -> %d -> spawn -> %d" % [
+			"PASS" if cleared == 0 and respawned > 0 else "FAIL", before, cleared, respawned])
+	get_tree().quit()
+
+
+## Wait (bounded) for the inspector to show data for the selected entity.
+func _await_inspector() -> bool:
+	inspector.data = {}
+	runner.request_entity_probe(inspector.selected_slot, inspector.selected_generation)
+	for i in AUTOTEST_SETTLE_FRAMES:
+		await get_tree().process_frame
+		if not inspector.data.is_empty():
+			return true
+	return false
+
+
+func _await_stat(key: String, done: Callable) -> void:
+	for i in AUTOTEST_SETTLE_FRAMES:
+		await get_tree().process_frame
+		if done.call(runner.stats()[key]):
+			return
 
 
 static func _pct(values: PackedFloat64Array, q: float) -> float:

@@ -1,6 +1,6 @@
 {
 	"version": 1,
-	"note": "Flora type ids are the u8 values in the flora_type layer; 0 = none, keep ids contiguous from 1. substrate_mask lists substrate names (the effective rule also requires the substrate's allows_flora bit (id - 1)). Rates are per day; mortality is the probability of dying within a year; seasonal_* arrays are [spring, summer, autumn, winter]. day_growth/night_growth weight growth by the season's daylight/darkness share. moisture_need and fertility values are 0..1 of the u8 range.",
+	"note": "Flora type ids are the u8 values in the flora_type layer; 0 = none, keep ids contiguous from 1. substrate_mask lists substrate names (the effective rule also requires the substrate's allows_flora bit (id - 1)). Rates are per day; mortality is the probability of dying within a year; seasonal_* arrays are [spring, summer, autumn, winter]. day_growth/night_growth weight growth by the season's daylight/darkness share. moisture_need and fertility values are 0..1 of the u8 range. Food value lives on the harvest item (config/items.json nutrition), never here.",
 	"flora": [
 		{ "id": 1, "name": "grass", "color": "#9cc95a",
 		  "substrate_mask": ["soil", "sand"],
@@ -9,7 +9,7 @@
 		  "seasonal_growth": [1.0, 0.8, 0.5, 0.0], "seasonal_yield": [0.6, 1.0, 0.8, 0.1],
 		  "day_growth": 1.0, "night_growth": 0.0,
 		  "moisture_need": 0.35, "fertility_consumption": 0.15,
-		  "harvest_item": "hay", "nutrition": 2, "initial_cover": 0.03, "tuned": false },
+		  "harvest_item": "hay", "initial_cover": 0.03, "tuned": false },
 		{ "id": 2, "name": "shrub", "color": "#5f8f3e",
 		  "substrate_mask": ["soil", "sand"],
 		  "growth_rate": 5.0, "max_biomass": 200, "maturity": 0.6,
@@ -17,7 +17,7 @@
 		  "seasonal_growth": [0.9, 1.0, 0.6, 0.1], "seasonal_yield": [0.4, 0.6, 0.8, 0.3],
 		  "day_growth": 1.0, "night_growth": 0.0,
 		  "moisture_need": 0.28, "fertility_consumption": 0.2,
-		  "harvest_item": "twigs", "nutrition": 1, "initial_cover": 0.01, "tuned": false },
+		  "harvest_item": "twigs", "initial_cover": 0.01, "tuned": false },
 		{ "id": 3, "name": "berry_bush", "color": "#b0407a",
 		  "substrate_mask": ["soil"],
 		  "growth_rate": 4.0, "max_biomass": 200, "maturity": 0.6,
@@ -25,7 +25,7 @@
 		  "seasonal_growth": [0.8, 1.0, 0.6, 0.0], "seasonal_yield": [0.1, 1.0, 0.7, 0.0],
 		  "day_growth": 1.0, "night_growth": 0.0,
 		  "moisture_need": 0.45, "fertility_consumption": 0.25,
-		  "harvest_item": "berries", "nutrition": 6, "initial_cover": 0.005, "tuned": false },
+		  "harvest_item": "berries", "initial_cover": 0.005, "tuned": false },
 		{ "id": 4, "name": "tree", "color": "#2e5a2b",
 		  "substrate_mask": ["soil"],
 		  "growth_rate": 1.5, "max_biomass": 255, "maturity": 0.7,
@@ -33,7 +33,7 @@
 		  "seasonal_growth": [1.0, 0.9, 0.5, 0.05], "seasonal_yield": [0.2, 0.3, 0.6, 0.2],
 		  "day_growth": 1.0, "night_growth": 0.0,
 		  "moisture_need": 0.4, "fertility_consumption": 0.3,
-		  "harvest_item": "wood", "nutrition": 0, "initial_cover": 0.005, "tuned": false },
+		  "harvest_item": "wood", "initial_cover": 0.005, "tuned": false },
 		{ "id": 5, "name": "reeds", "color": "#cdbb5c",
 		  "substrate_mask": ["mud", "soil"],
 		  "growth_rate": 10.0, "max_biomass": 180, "maturity": 0.5,
@@ -41,7 +41,7 @@
 		  "seasonal_growth": [1.0, 1.0, 0.7, 0.0], "seasonal_yield": [0.5, 1.0, 0.8, 0.2],
 		  "day_growth": 1.0, "night_growth": 0.0,
 		  "moisture_need": 0.72, "fertility_consumption": 0.1,
-		  "harvest_item": "reeds", "nutrition": 1, "initial_cover": 0.01, "tuned": false },
+		  "harvest_item": "reeds", "initial_cover": 0.01, "tuned": false },
 		{ "id": 6, "name": "fungus", "color": "#e3d7c6",
 		  "substrate_mask": ["soil", "mud"],
 		  "growth_rate": 7.0, "max_biomass": 100, "maturity": 0.4,
@@ -49,6 +49,6 @@
 		  "seasonal_growth": [0.6, 0.3, 1.0, 0.2], "seasonal_yield": [0.6, 0.3, 1.0, 0.3],
 		  "day_growth": 0.2, "night_growth": 1.0,
 		  "moisture_need": 0.6, "fertility_consumption": 0.05,
-		  "harvest_item": "mushrooms", "nutrition": 3, "initial_cover": 0.005, "tuned": false }
+		  "harvest_item": "mushrooms", "initial_cover": 0.005, "tuned": false }
 	]
 }

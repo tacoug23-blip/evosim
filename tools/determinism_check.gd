@@ -1,10 +1,11 @@
-## Full-scale determinism check (the Phase 1 acceptance run): default map and entity count.
+## Full-scale determinism check: default map, flora enabled, founder entities.
 ##   1. Generate the world twice from the same seed; world hashes must match.
-##   2. Run the spike N ticks on each, checking one-per-cell every tick; entity hashes match.
-##   3. Save run A, load it, and compare world and full-state hashes.
+##   2. Run N ticks on each, checking one-per-cell (and corpse bookkeeping) every
+##      --check-every ticks; entity-state hashes must match.
+##   3. Save run B, load it, and compare world and full-state hashes.
 ##
 ##   godot --headless --path . --script res://tools/determinism_check.gd -- [--ticks=1000]
-##       [--entities=N] [--check-every=1]
+##       [--entities=N (founder groups of 250; default: founders.* params)] [--check-every=1]
 extends SceneTree
 
 const Registry := preload("res://sim/params/registry.gd")
@@ -12,6 +13,7 @@ const SimCore := preload("res://sim/core/sim_core.gd")
 const SaveLoad := preload("res://sim/io/save_load.gd")
 
 const SAVE_PATH := "user://determinism_check.evosave"
+const GROUP_SIZE := 250
 
 
 func _initialize() -> void:
@@ -36,8 +38,14 @@ func _initialize() -> void:
 		core.init_new(params)
 		var gen_s := (Time.get_ticks_msec() - t0) / 1000.0
 		var world_hash: String = core.world_hash()
-		var n := entities if entities >= 0 else params.get_int("spike.entity_count")
-		core.spawn_spike(n)
+		var overrides := {}
+		if entities >= 0:
+			@warning_ignore("integer_division")
+			var groups := maxi(1, entities / GROUP_SIZE)
+			overrides = {"groups": groups, "size_min": GROUP_SIZE, "size_max": GROUP_SIZE,
+					"spacing": int(sqrt(float(core.world.cell_count) / groups) * 0.5)}
+		core.spawn_founders(overrides)
+		var n0: int = core.entities.count
 		var violation := ""
 		var tick_ms := PackedFloat64Array()
 		for t in ticks:
@@ -45,29 +53,31 @@ func _initialize() -> void:
 			core.step()
 			tick_ms.append((Time.get_ticks_usec() - s0) / 1000.0)
 			if violation.is_empty() and core.tick % check_every == 0:
-				violation = core.spike.check_invariants()
+				violation = core.entities.check_invariants()
 				if not violation.is_empty():
 					violation = "tick %d: %s" % [core.tick, violation]
-		var run := {"core": core, "world_hash": world_hash, "spike_hash": core.spike.hash_state(),
-				"violation": violation}
+		var run := {"core": core, "world_hash": world_hash, "entity_hash": core.entities.hash_state(),
+				"full_hash": core.full_hash(), "violation": violation}
 		runs.append(run)
-		print("run %d: %dx%d world in %.1f s, %d entities, %d ticks, mean %.1f ms/tick (first 100: %.1f, last 100: %.1f)" % [
-				run_index + 1, core.world.width, core.world.height, gen_s, core.spike.count, ticks,
-				_mean(tick_ms, 0, ticks), _mean(tick_ms, 0, mini(100, ticks)),
-				_mean(tick_ms, maxi(0, ticks - 100), ticks)])
-		print("  world hash  %s" % world_hash)
-		print("  entity hash %s" % run["spike_hash"])
-		print("  one-per-cell: %s" % ("ok (checked every %d ticks)" % check_every if violation.is_empty() else violation))
+		print("run %d: %dx%d world in %.1f s, %d founders (%d alive after), %d ticks, mean %.1f ms/tick" % [
+				run_index + 1, core.world.width, core.world.height, gen_s, n0, core.entities.count,
+				ticks, _mean(tick_ms)])
+		print("  world hash (at start) %s" % world_hash)
+		print("  entity hash           %s" % run["entity_hash"])
+		print("  full hash             %s" % run["full_hash"])
+		print("  one-per-cell + corpses: %s" % ("ok (checked every %d ticks)" % check_every if violation.is_empty() else violation))
 		ok = ok and violation.is_empty()
 
 	var same_world: bool = runs[0]["world_hash"] == runs[1]["world_hash"]
-	var same_entities: bool = runs[0]["spike_hash"] == runs[1]["spike_hash"]
+	var same_entities: bool = runs[0]["entity_hash"] == runs[1]["entity_hash"]
+	var same_full: bool = runs[0]["full_hash"] == runs[1]["full_hash"]
 	print("same seed -> identical world hash: %s" % same_world)
 	print("same seed -> identical entity hash after %d ticks: %s" % [ticks, same_entities])
-	ok = ok and same_world and same_entities
+	print("same seed -> identical full hash after %d ticks: %s" % [ticks, same_full])
+	ok = ok and same_world and same_entities and same_full
 
 	var core_b: RefCounted = runs[1]["core"]
-	runs.clear()  # drop run A so the save/load test fits in memory comfortably
+	runs.clear()
 	var t_save := Time.get_ticks_msec()
 	var err := SaveLoad.save(core_b, SAVE_PATH)
 	var save_s := (Time.get_ticks_msec() - t_save) / 1000.0
@@ -86,10 +96,8 @@ func _initialize() -> void:
 	quit(0 if ok else 1)
 
 
-static func _mean(values: PackedFloat64Array, from: int, to: int) -> float:
-	if to <= from:
-		return 0.0
+static func _mean(values: PackedFloat64Array) -> float:
 	var s := 0.0
-	for i in range(from, to):
-		s += values[i]
-	return s / (to - from)
+	for v in values:
+		s += v
+	return s / maxi(values.size(), 1)

@@ -35,6 +35,7 @@ This document is the source of truth. Every phase prompt in `docs/phases/` assum
 2. **Everything numeric is a registered parameter.** No magic numbers in sim code. Every tunable lives in the parameter registry (section 12) with a default, min, max, group, and description.
 3. **Struct-of-arrays.** No per-entity or per-cell objects. Use `Packed*Array` (GDScript) or typed Vecs (Rust). One array per field.
 4. **Every beneficial gene has a cost.** Speed, sensing, aggression, fertility, lifespan, and so on each draw energy or trade off against another gene. No free upgrades.
+   - Energy costs are derived from the genome (§4.1.1); they are never genes themselves. A gene whose only effect is to lower a cost is not allowed.
 5. **Staggered updates.** Entities decide every N ticks, offset by ID so the load is spread. Flora updates by random sampling. Signal fields update at lower resolution and frequency.
 6. **Observability before complexity.** Features that cannot be inspected or charted are not considered done.
 7. **Deterministic RNG.** One seeded RNG stream per subsystem so adding a feature does not reshuffle unrelated randomness.
@@ -65,7 +66,9 @@ Separate lower-resolution grids:
 
 Substrate properties (config-driven): `move_cost`, `fertility_base`, `allows_flora` (bitmask of flora types), `allows_building`, `allows_water_crossing`.
 
-Flora properties (`config/flora.json`): `substrate_mask`, `growth_rate`, `seed_spread_radius`, `seasonal_yield[4]`, `harvest_item`, `nutrition`, `fertility_consumption`, `moisture_need`, plus (added in Phase 2) `color`, `max_biomass`, `maturity` (share of max biomass at which a plant seeds), `seed_chance` (per day while mature), `mortality` (probability of dying within a year), `seasonal_growth[4]` (per-season growth multiplier; 0 = stalled, which also stops seeding), `day_growth` / `night_growth` (growth weight in daylight vs darkness, applied through the season's day length), and `initial_cover`. A type grows on a substrate only if both its `substrate_mask` and the substrate's `allows_flora` bit allow it. New plants spawn on nearby valid tiles. Yield varies by season. Growth requires fertility and moisture; harvest and growth drain fertility. Fertility regenerates toward a natural level set by substrate and moisture.
+Flora properties (`config/flora.json`): `substrate_mask`, `growth_rate`, `seed_spread_radius`, `seasonal_yield[4]`, `harvest_item`, `fertility_consumption`, `moisture_need`, plus (added in Phase 2) `color`, `max_biomass`, `maturity` (share of max biomass at which a plant seeds), `seed_chance` (per day while mature), `mortality` (probability of dying within a year), `seasonal_growth[4]` (per-season growth multiplier; 0 = stalled, which also stops seeding), `day_growth` / `night_growth` (growth weight in daylight vs darkness, applied through the season's day length), and `initial_cover`. A type grows on a substrate only if both its `substrate_mask` and the substrate's `allows_flora` bit allow it. Flora carry no food value of their own: what a plant is worth to eat is its `harvest_item`'s nutrition (Phase 3). New plants spawn on nearby valid tiles. Yield varies by season. Growth requires fertility and moisture; harvest and growth drain fertility. Fertility regenerates toward a natural level set by substrate and moisture.
+
+Items (`config/items.json`, Phase 3): `id`, `name`, `desc`, `nutrition`. Item 0 is "none"; ids are never renumbered (1 hay, 2 twigs, 3 berries, 4 wood, 5 reeds, 6 mushrooms). Every item is edible, there is no edible flag, and food value differs only through `nutrition` (energy per item, before the eater's `digest_efficiency`), which must be > 0. Harvesting yields items (biomass removed × the plant's seasonal yield); eating an item gains `nutrition × digest_efficiency`. Corpses have their own nutrition value in the registry (`corpse.nutrition_per_mass`).
 
 Seed-crowding rule (Phase 2): a seed lands on a random cell within `seed_spread_radius` and establishes only on an empty, allowed cell that is not too dry. Each neighbouring plant of the same type (of 8) adds `flora.crowding_penalty` to the chance the seed fails (a Janzen-Connell effect). This keeps one type from monopolising shared habitat.
 
@@ -82,9 +85,9 @@ State arrays (SoA): id, x, y, alive, sex, age, life_stage, energy, hp, tribe_id,
 A float vector with per-gene bounds. Each gene is registered with: name, min, max, default, mutation_rate, mutation_scale, and cost function. Global `mutation_scale_multiplier` scales all mutations (the "how different are children" knob).
 
 Gene groups (initial list, extend as needed):
-- **Metabolism**: base_energy_burn, food_needed_to_sate, digest_efficiency, max_energy
-- **Locomotion**: move_speed, move_energy_cost
-- **Perception**: sense_radius (costs energy), memory_capacity
+- **Metabolism**: food_needed_to_sate, digest_efficiency, max_energy
+- **Locomotion**: move_speed
+- **Perception**: sense_radius (cost per scanned cell, §4.1.1), memory_capacity
 - **Life cycle**: lifespan, maturity_age, fertility, gestation_length, mate_choice_in_tribe, mating_propensity
 - **Social**: group_preference (positive = joins others' activities, negative = avoids), tribe_loyalty, generosity, aggression, retaliation_bias
 - **Activity propensities**: forage, build, cook, craft, carry_corpse, fight, share, explore
@@ -92,6 +95,14 @@ Gene groups (initial list, extend as needed):
 - **Combat**: attack, defense, damage_resistance
 
 Genes that are physical stats (speed, attack, and so on) must carry a cost. Document each gene's cost in `config/genes.json`.
+
+### 4.1.1 Derived costs
+
+Base energy burn, sense cost and per-cell move cost are computed from the genome when it is fixed (at spawn or birth). They are stored in SoA arrays (base_burn, move_cost) in fixed-point thousandths and are not genes.
+- base_burn = burn_floor + k_capacity·(max_energy/1000) + k_speed·move_speed² + k_digest·digest_efficiency + k_memory·memory_capacity + k_hp·(max_hp/100). Later phases add a term for each new physical gene (attack, defense, lifespan, fertility, …).
+- sense_burn = sense_cost_per_cell·(2·sense_radius+1)², charged per tick.
+- move_cost = move_cost_floor + move_cost_k_speed·move_speed².
+- All coefficients are registry parameters. A test checks that each term rises with its gene.
 
 ### 4.2 Sexes and reproduction
 
@@ -127,7 +138,8 @@ Rules:
 
 - Entities propose moves; conflicts are resolved in a seeded deterministic order (rotating priority).
 - No swaps. Blocked entities wait, sidestep, or re-plan.
-- Move cost = terrain cost x entity move_energy_cost. Move speed determines how many cells per tick (via accumulator).
+- Move cost = terrain cost × entity move_cost (derived, §4.1.1) × carry factor.
+- Move speed (the move_speed gene, default 0.6 cells per tick on cost-1 terrain) determines how many cells per tick (via accumulator).
 - Melee requires adjacency.
 
 ---
@@ -231,8 +243,8 @@ One registry, one source of truth.
 ```
 { "id": "entity.move_speed.default",
   "group": "entity.locomotion",
-  "type": "float", "default": 1.0, "min": 0.1, "max": 10.0,
-  "desc": "Cells per tick at gene value 1.0" }
+  "type": "float", "default": 0.6, "min": 0.05, "max": 1.0,
+  "desc": "Cells per tick on cost-1 terrain" }
 ```
 
 Requirements:

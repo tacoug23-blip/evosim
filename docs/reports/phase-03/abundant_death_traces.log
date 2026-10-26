@@ -1,0 +1,118 @@
+Godot Engine v4.6.1.stable.official.14d19694e - https://godotengine.org
+
+slot 4606 starts at (1235, 1277) on rock, energy 552; plants within 5: 9, 10: 85, 25: 745
+slot 739 starts at (2435, 3785) on rock, energy 754; plants within 5: 0, 10: 2, 25: 581
+slot 2318 starts at (221, 2408) on soil, energy 592; plants within 5: 66, 10: 199, 25: 951
+  slot 4606 day  0.50 (1231, 1273) rock e   508  wander hd 3  moved 12 cells so far  plants r5 9 r10 71  scores: forage 0.387, wander 0.605, rest 0.285  memory: food (1234,1282) 0.5d ago; food (1228,1276) 0.0d ago; food (1229,1279) 0.3d ago
+  slot 739 day  0.50 (2430, 3790) rock e   723  rest hd 3  moved 5 cells so far  plants r5 0 r10 0  scores: wander 0.252, rest 0.404  memory: -
+  slot 2318 day  0.50 (228, 2411) rock e   919  rest hd 3  moved 9 cells so far  plants r5 23 r10 114  scores: wander 0.455, rest 0.500  memory: food (220,2407) 0.5d ago; food (225,2412) 0.4d ago; food (227,2412) 0.1d ago
+  slot 4606 day  1.00 (1241, 1263) rock e   465  wander hd 7  moved 24 cells so far  plants r5 0 r10 0  scores: seek food 0.318, wander 0.723, rest 0.260  memory: food (1234,1282) 1.0d ago; food (1228,1276) 0.3d ago; food (1229,1279) 0.8d ago
+  slot 739 day  1.00 (2430, 3791) rock e   699  wander hd 2  moved 6 cells so far  plants r5 0 r10 0  scores: wander 0.508, rest 0.391  memory: -
+  slot 2318 day  1.00 (228, 2411) rock e   896  rest hd 3  moved 9 cells so far  plants r5 24 r10 116  scores: forage 0.001, wander 0.255, rest 0.499  memory: food (220,2407) 1.0d ago; food (225,2412) 0.9d ago; food (227,2412) 0.0d ago
+  slot 4606 day  1.50 (1253, 1251) rock e   422  wander hd 7  moved 36 cells so far  plants r5 0 r10 0  scores: seek food 0.319, wander 0.385, rest 0.235  memory: food (1234,1282) 1.5d ago; food (1228,1276) 0.8d ago; food (1229,1279) 1.3d ago
+  slot 739 day  1.50 (2432, 3795) rock e   661  rest hd 3  moved 15 cells so far  plants r5 0 r10 7  scores: wander 0.320, rest 0.368  memory: -
+  slot 2318 day  1.50 (228, 2411) rock e   874  rest hd 3  moved 9 cells so far  plants r5 24 r10 116  scores: forage 0.026, wander 0.355, rest 0.487  memory: food (220,2407) 1.5d ago; food (225,2412) 1.4d ago; food (227,2412) 0.0d ago
+  slot 4606 day  2.00 (1265, 1239) rock e   379  wander hd 7  moved 48 cells so far  plants r5 0 r10 0  scores: seek food 0.316, wander 0.345, rest 0.215  memory: food (1234,1282) 2.0d ago; food (1228,1276) 1.3d ago; food (1229,1279) 1.8d ago
+  slot 739 day  2.00 (2430, 3797) rock e   635  rest hd 3  moved 17 cells so far  plants r5 0 r10 4  scores: wander 0.227, rest 0.353  memory: -
+  slot 2318 day  2.00 (228, 2411) rock e   852  rest hd 3  moved 9 cells so far  plants r5 23 r10 115  scores: forage 0.051, wander 0.305, rest 0.474  memory: food (220,2407) 2.0d ago; food (225,2412) 1.9d ago; food (227,2412) 0.0d ago
+  slot 4606 day  2.50 (1277, 1227) rock e   336  wander hd 7  moved 60 cells so far  plants r5 0 r10 0  scores: seek food 0.306, wander 0.357, rest 0.190  memory: food (1234,1282) 2.5d ago; food (1228,1276) 1.8d ago; food (1229,1279) 2.3d ago
+  slot 739 day  2.50 (2430, 3797) rock e   613  rest hd 3  moved 17 cells so far  plants r5 0 r10 4  scores: wander 0.282, rest 0.343  memory: -
+  slot 2318 day  2.50 (228, 2411) rock e   830  rest hd 3  moved 9 cells so far  plants r5 24 r10 116  scores: forage 0.071, wander 0.305, rest 0.464  memory: food (220,2407) 2.5d ago; food (225,2412) 2.4d ago; food (227,2412) 0.1d ago
+  slot 4606 day  3.00 (1289, 1215) rock e   292  wander hd 7  moved 72 cells so far  plants r5 0 r10 0  scores: seek food 0.290, wander 0.369, rest 0.165  memory: food (1234,1282) 3.0d ago; food (1228,1276) 2.3d ago; food (1229,1279) 2.8d ago
+  slot 739 day  3.00 (2430, 3797) rock e   591  rest hd 3  moved 17 cells so far  plants r5 0 r10 4  scores: wander 0.288, rest 0.330  memory: -
+  slot 2318 day  3.00 (228, 2411) rock e   808  rest hd 3  moved 9 cells so far  plants r5 24 r10 115  scores: forage 0.096, wander 0.305, rest 0.451  memory: food (220,2407) 3.0d ago; food (225,2412) 2.9d ago; food (227,2412) 0.1d ago
+  slot 4606 day  3.50 (1301, 1203) rock e   249  wander hd 7  moved 84 cells so far  plants r5 0 r10 0  scores: seek food 0.268, wander 0.381, rest 0.140  memory: food (1234,1282) 3.5d ago; food (1228,1276) 2.8d ago; food (1229,1279) 3.3d ago
+  slot 739 day  3.50 (2427, 3800) rock e   564  rest hd 3  moved 20 cells so far  plants r5 0 r10 1  scores: wander 0.196, rest 0.315  memory: -
+  slot 2318 day  3.50 (228, 2411) rock e   786  rest hd 3  moved 9 cells so far  plants r5 24 r10 115  scores: forage 0.120, wander 0.305, rest 0.438  memory: food (220,2407) 3.5d ago; food (225,2412) 3.4d ago; food (227,2412) 0.0d ago
+  slot 4606 day  4.00 (1313, 1191) rock e   206  wander hd 7  moved 96 cells so far  plants r5 0 r10 0  scores: seek food 0.239, wander 0.394, rest 0.115  memory: food (1234,1282) 4.0d ago; food (1228,1276) 3.3d ago; food (1229,1279) 3.8d ago
+  slot 739 day  4.00 (2427, 3800) rock e   542  rest hd 3  moved 20 cells so far  plants r5 0 r10 1  scores: wander 0.202, rest 0.302  memory: -
+  slot 2318 day  4.00 (228, 2411) rock e   764  rest hd 3  moved 9 cells so far  plants r5 24 r10 115  scores: forage 0.145, wander 0.255, rest 0.425  memory: food (220,2407) 4.0d ago; food (225,2412) 3.9d ago; food (227,2412) 0.0d ago
+  slot 4606 day  4.50 (1325, 1179) rock e   163  wander hd 7  moved 108 cells so far  plants r5 0 r10 0  scores: seek food 0.212, wander 0.403, rest 0.095  memory: food (1234,1282) 4.5d ago; food (1228,1276) 3.8d ago; food (1229,1279) 4.3d ago
+  slot 739 day  4.50 (2427, 3800) rock e   520  rest hd 3  moved 20 cells so far  plants r5 0 r10 1  scores: wander 0.258, rest 0.289  memory: -
+  slot 2318 day  4.50 (228, 2411) rock e   742  rest hd 3  moved 9 cells so far  plants r5 24 r10 115  scores: forage 0.170, wander 0.305, rest 0.412  memory: food (220,2407) 4.5d ago; food (225,2412) 4.4d ago; food (227,2412) 0.0d ago
+  slot 4606 day  5.00 (1337, 1167) rock e   120  wander hd 7  moved 120 cells so far  plants r5 0 r10 0  scores: seek food 0.173, wander 0.416, rest 0.070  memory: food (1234,1282) 5.0d ago; food (1228,1276) 4.3d ago; food (1229,1279) 4.8d ago
+  slot 739 day  5.00 (2427, 3800) rock e   498  rest hd 3  moved 20 cells so far  plants r5 0 r10 1  scores: wander 0.213, rest 0.279  memory: -
+  slot 2318 day  5.00 (228, 2411) rock e   720  rest hd 3  moved 9 cells so far  plants r5 23 r10 114  scores: forage 0.190, wander 0.305, rest 0.402  memory: food (220,2407) 5.0d ago; food (225,2412) 4.9d ago; food (227,2412) 0.1d ago
+  slot 4606 day  5.50 (1349, 1155) rock e    76  wander hd 7  moved 132 cells so far  plants r5 0 r10 0  scores: seek food 0.128, wander 0.428, rest 0.045  memory: food (1234,1282) 5.5d ago; food (1228,1276) 4.8d ago; food (1229,1279) 5.3d ago
+  slot 739 day  5.50 (2427, 3800) rock e   476  rest hd 3  moved 20 cells so far  plants r5 0 r10 1  scores: wander 0.220, rest 0.266  memory: -
+  slot 2318 day  5.50 (228, 2411) rock e   698  rest hd 3  moved 9 cells so far  plants r5 23 r10 113  scores: forage 0.214, wander 0.305, rest 0.389  memory: food (220,2407) 5.5d ago; food (225,2412) 5.4d ago; food (227,2412) 0.1d ago
+  slot 4606 day  6.00 (1361, 1143) rock e    33  wander hd 7  moved 144 cells so far  plants r5 0 r10 0  scores: seek food 0.077, wander 0.440, rest 0.020  memory: food (1234,1282) 6.0d ago; food (1228,1276) 5.3d ago; food (1229,1279) 5.8d ago
+  slot 739 day  6.00 (2427, 3800) rock e   454  rest hd 3  moved 20 cells so far  plants r5 0 r10 1  scores: wander 0.226, rest 0.254  memory: -
+  slot 2318 day  6.00 (228, 2411) rock e   676  rest hd 3  moved 9 cells so far  plants r5 23 r10 111  scores: forage 0.239, wander 0.305, rest 0.377  memory: food (220,2407) 6.0d ago; food (225,2412) 5.9d ago; food (227,2412) 0.0d ago
+  slot 739 day  6.50 (2427, 3800) rock e   432  rest hd 3  moved 20 cells so far  plants r5 0 r10 1  scores: wander 0.232, rest 0.241  memory: -
+  slot 2318 day  6.50 (228, 2411) rock e   654  rest hd 3  moved 9 cells so far  plants r5 22 r10 112  scores: forage 0.264, wander 0.305, rest 0.364  memory: food (227,2412) 0.0d ago
+  slot 739 day  7.00 (2422, 3805) rock e   400  wander hd 3  moved 25 cells so far  plants r5 0 r10 0  scores: wander 0.291, rest 0.223  memory: -
+  slot 2318 day  7.00 (228, 2411) rock e   632  rest hd 3  moved 9 cells so far  plants r5 22 r10 111  scores: forage 0.289, wander 0.255, rest 0.351  memory: food (227,2412) 0.0d ago
+  slot 739 day  7.50 (2410, 3817) rock e   357  wander hd 3  moved 37 cells so far  plants r5 0 r10 0  scores: wander 0.300, rest 0.203  memory: -
+  slot 2318 day  7.50 (228, 2411) rock e   609  rest hd 3  moved 9 cells so far  plants r5 22 r10 110  scores: forage 0.309, wander 0.255, rest 0.341  memory: food (227,2412) 0.1d ago
+  slot 739 day  8.00 (2398, 3829) rock e   314  wander hd 3  moved 49 cells so far  plants r5 0 r10 0  scores: wander 0.313, rest 0.178  memory: -
+  slot 2318 day  8.00 (228, 2411) rock e   947  rest hd 3  moved 9 cells so far  plants r5 23 r10 112  scores: wander 0.255, rest 0.500  memory: food (227,2412) 0.0d ago
+  slot 739 day  8.50 (2386, 3841) rock e   271  wander hd 3  moved 61 cells so far  plants r5 0 r10 0  scores: wander 0.325, rest 0.153  memory: -
+  slot 2318 day  8.50 (228, 2411) rock e   925  rest hd 3  moved 9 cells so far  plants r5 22 r10 111  scores: wander 0.255, rest 0.500  memory: food (227,2412) 0.0d ago
+  slot 739 day  9.00 (2374, 3853) rock e   227  wander hd 3  moved 73 cells so far  plants r5 0 r10 0  scores: wander 0.337, rest 0.128  memory: -
+  slot 2318 day  9.00 (228, 2411) rock e   902  rest hd 3  moved 9 cells so far  plants r5 22 r10 111  scores: wander 0.305, rest 0.500  memory: food (227,2412) 0.2d ago; food (226,2411) 0.0d ago
+  slot 739 day  9.50 (2362, 3865) rock e   184  wander hd 3  moved 85 cells so far  plants r5 0 r10 0  scores: wander 0.349, rest 0.103  memory: -
+  slot 2318 day  9.50 (228, 2411) rock e   880  rest hd 3  moved 9 cells so far  plants r5 22 r10 111  scores: forage 0.020, wander 0.255, rest 0.489  memory: food (227,2412) 0.7d ago; food (226,2411) 0.0d ago
+  slot 739 day 10.00 (2350, 3877) rock e   141  wander hd 3  moved 97 cells so far  plants r5 0 r10 0  scores: wander 0.359, rest 0.083  memory: -
+  slot 2318 day 10.00 (228, 2411) rock e   858  rest hd 3  moved 9 cells so far  plants r5 21 r10 110  scores: forage 0.039, wander 0.255, rest 0.479  memory: food (227,2412) 1.2d ago; food (226,2411) 0.1d ago
+  slot 739 day 10.50 (2338, 3889) rock e    98  wander hd 3  moved 109 cells so far  plants r5 0 r10 0  scores: wander 0.371, rest 0.058  memory: -
+  slot 2318 day 10.50 (228, 2411) rock e   836  rest hd 3  moved 9 cells so far  plants r5 22 r10 112  scores: forage 0.063, wander 0.255, rest 0.466  memory: food (227,2412) 1.7d ago; food (226,2411) 0.1d ago
+  slot 739 day 11.00 (2326, 3901) rock e    55  wander hd 3  moved 121 cells so far  plants r5 0 r10 0  scores: wander 0.384, rest 0.033  memory: -
+  slot 2318 day 11.00 (228, 2411) rock e   814  rest hd 3  moved 9 cells so far  plants r5 22 r10 113  scores: forage 0.087, wander 0.255, rest 0.454  memory: food (227,2412) 2.2d ago; food (226,2411) 0.0d ago
+  slot 739 day 11.50 (2314, 3913) rock e    11  wander hd 3  moved 133 cells so far  plants r5 0 r10 0  scores: wander 0.396, rest 0.008  memory: -
+  slot 2318 day 11.50 (228, 2411) rock e   792  rest hd 3  moved 9 cells so far  plants r5 22 r10 114  scores: forage 0.111, wander 0.255, rest 0.441  memory: food (227,2412) 2.7d ago; food (226,2411) 0.0d ago
+  slot 2318 day 12.00 (228, 2411) rock e   770  rest hd 3  moved 9 cells so far  plants r5 24 r10 116  scores: forage 0.135, wander 0.255, rest 0.428  memory: food (227,2412) 3.2d ago; food (226,2411) 0.0d ago
+  slot 2318 day 12.50 (228, 2411) rock e   748  rest hd 3  moved 9 cells so far  plants r5 23 r10 115  scores: forage 0.155, wander 0.255, rest 0.418  memory: food (227,2412) 3.7d ago; food (226,2411) 0.1d ago
+  slot 2318 day 13.00 (228, 2411) rock e   726  rest hd 3  moved 9 cells so far  plants r5 23 r10 116  scores: forage 0.179, wander 0.255, rest 0.405  memory: food (227,2412) 4.2d ago; food (226,2411) 0.1d ago
+  slot 2318 day 13.50 (228, 2411) rock e   704  rest hd 3  moved 9 cells so far  plants r5 23 r10 119  scores: forage 0.203, wander 0.255, rest 0.392  memory: food (227,2412) 4.7d ago; food (226,2411) 0.0d ago
+  slot 2318 day 14.00 (228, 2411) rock e   682  rest hd 3  moved 9 cells so far  plants r5 23 r10 118  scores: forage 0.227, wander 0.255, rest 0.379  memory: food (227,2412) 5.2d ago; food (226,2411) 0.0d ago
+  slot 2318 day 14.50 (228, 2411) rock e   660  rest hd 3  moved 9 cells so far  plants r5 22 r10 118  scores: forage 0.251, wander 0.255, rest 0.367  memory: food (227,2412) 5.7d ago; food (226,2411) 0.0d ago
+  slot 2318 day 15.00 (228, 2411) rock e   638  rest hd 3  moved 9 cells so far  plants r5 22 r10 116  scores: forage 0.270, wander 0.255, rest 0.356  memory: food (226,2411) 0.1d ago
+  slot 2318 day 15.50 (228, 2411) rock e   615  rest hd 3  moved 9 cells so far  plants r5 22 r10 115  scores: forage 0.294, wander 0.255, rest 0.344  memory: food (226,2411) 0.1d ago
+  slot 2318 day 16.00 (228, 2411) rock e   593  rest hd 3  moved 9 cells so far  plants r5 23 r10 119  scores: forage 0.318, wander 0.305, rest 0.331  memory: food (226,2411) 0.0d ago
+  slot 2318 day 16.50 (227, 2412) soil e   670  rest hd 3  moved 10 cells so far  plants r5 33 r10 133  scores: forage 0.242, wander 0.255, rest 0.373  memory: food (225,2414) 0.0d ago; food (226,2411) 0.3d ago
+  slot 2318 day 17.00 (227, 2412) soil e   648  rest hd 3  moved 10 cells so far  plants r5 33 r10 130  scores: forage 0.266, wander 0.255, rest 0.360  memory: food (225,2414) 0.0d ago; food (226,2411) 0.8d ago
+  slot 2318 day 17.50 (227, 2412) soil e   626  rest hd 3  moved 10 cells so far  plants r5 33 r10 133  scores: forage 0.285, wander 0.255, rest 0.350  memory: food (225,2414) 0.1d ago; food (226,2411) 1.3d ago
+  slot 2318 day 18.00 (227, 2412) soil e   604  rest hd 3  moved 10 cells so far  plants r5 34 r10 134  scores: forage 0.310, wander 0.255, rest 0.337  memory: food (225,2414) 0.1d ago; food (226,2411) 1.8d ago
+  slot 2318 day 18.50 (226, 2413) soil e   940  rest hd 3  moved 11 cells so far  plants r5 46 r10 146  scores: wander 0.355, rest 0.500  memory: food (225,2414) 0.0d ago; food (226,2411) 2.3d ago
+  slot 2318 day 19.00 (226, 2413) soil e   918  rest hd 3  moved 11 cells so far  plants r5 46 r10 145  scores: wander 0.355, rest 0.500  memory: food (225,2414) 0.0d ago; food (226,2411) 2.8d ago
+  slot 2318 day 19.50 (226, 2413) soil e   896  rest hd 3  moved 11 cells so far  plants r5 45 r10 146  scores: forage 0.004, wander 0.355, rest 0.498  memory: food (225,2414) 0.0d ago; food (226,2411) 3.3d ago
+  slot 2318 day 20.00 (226, 2413) soil e   874  rest hd 3  moved 11 cells so far  plants r5 45 r10 147  scores: forage 0.024, wander 0.355, rest 0.488  memory: food (225,2414) 0.1d ago; food (226,2411) 3.8d ago
+  slot 2318 day 20.50 (226, 2413) soil e   852  rest hd 3  moved 11 cells so far  plants r5 45 r10 147  scores: forage 0.048, wander 0.355, rest 0.475  memory: food (225,2414) 0.6d ago; food (226,2413) 0.1d ago; food (226,2411) 4.3d ago
+  slot 2318 day 21.00 (226, 2413) soil e   830  rest hd 3  moved 11 cells so far  plants r5 45 r10 146  scores: forage 0.073, wander 0.355, rest 0.462  memory: food (225,2414) 1.1d ago; food (226,2413) 0.0d ago; food (226,2411) 4.8d ago
+  slot 2318 day 21.50 (226, 2413) soil e   808  rest hd 3  moved 11 cells so far  plants r5 46 r10 148  scores: forage 0.098, wander 0.355, rest 0.450  memory: food (225,2414) 1.6d ago; food (226,2413) 0.0d ago; food (226,2411) 5.3d ago
+  slot 2318 day 22.00 (226, 2413) soil e   786  rest hd 3  moved 11 cells so far  plants r5 47 r10 149  scores: forage 0.123, wander 0.355, rest 0.437  memory: food (225,2414) 2.1d ago; food (226,2413) 0.0d ago; food (226,2411) 5.8d ago
+  slot 2318 day 22.50 (226, 2413) soil e   764  rest hd 3  moved 11 cells so far  plants r5 47 r10 150  scores: forage 0.143, wander 0.355, rest 0.427  memory: food (225,2414) 2.6d ago; food (226,2413) 0.1d ago
+  slot 2318 day 23.00 (226, 2413) soil e   742  rest hd 3  moved 11 cells so far  plants r5 47 r10 149  scores: forage 0.168, wander 0.355, rest 0.414  memory: food (225,2414) 3.1d ago; food (226,2413) 0.1d ago
+  slot 2318 day 23.50 (226, 2413) soil e   719  rest hd 3  moved 11 cells so far  plants r5 48 r10 149  scores: forage 0.192, wander 0.355, rest 0.401  memory: food (225,2414) 3.6d ago; food (226,2413) 0.0d ago
+  slot 2318 day 24.00 (226, 2413) soil e   697  rest hd 3  moved 11 cells so far  plants r5 46 r10 147  scores: forage 0.217, wander 0.355, rest 0.388  memory: food (225,2414) 4.1d ago; food (226,2413) 0.0d ago
+  slot 2318 day 24.50 (226, 2413) soil e   675  rest hd 3  moved 11 cells so far  plants r5 46 r10 149  scores: forage 0.242, wander 0.355, rest 0.375  memory: food (225,2414) 4.6d ago; food (226,2413) 0.0d ago
+  slot 2318 day 25.00 (229, 2410) rock e   649  rest hd 7  moved 14 cells so far  plants r5 9 r10 101  scores: forage 0.234, wander 0.255, rest 0.363  memory: food (225,2414) 5.1d ago; food (226,2413) 0.1d ago
+  slot 2318 day 25.50 (229, 2410) rock e   627  rest hd 7  moved 14 cells so far  plants r5 9 r10 105  scores: forage 0.255, wander 0.255, rest 0.350  memory: food (225,2414) 5.6d ago; food (226,2413) 0.1d ago
+  slot 2318 day 26.00 (229, 2410) rock e   605  rest hd 7  moved 14 cells so far  plants r5 9 r10 107  scores: forage 0.277, wander 0.255, rest 0.337  memory: food (226,2413) 0.0d ago
+  slot 2318 day 26.50 (229, 2410) rock e   583  rest hd 7  moved 14 cells so far  plants r5 9 r10 107  scores: forage 0.299, wander 0.255, rest 0.324  memory: food (226,2413) 0.0d ago
+  slot 2318 day 27.00 (227, 2412) soil e   653  rest hd 3  moved 16 cells so far  plants r5 34 r10 136  scores: forage 0.248, wander 0.255, rest 0.363  memory: food (226,2413) 0.1d ago; food (225,2410) 0.0d ago
+  slot 2318 day 27.50 (227, 2412) soil e   631  rest hd 3  moved 16 cells so far  plants r5 34 r10 137  scores: forage 0.267, wander 0.255, rest 0.353  memory: food (226,2413) 0.6d ago; food (225,2410) 0.1d ago
+  slot 2318 day 28.00 (227, 2412) soil e   609  rest hd 3  moved 16 cells so far  plants r5 34 r10 136  scores: forage 0.290, wander 0.255, rest 0.340  memory: food (226,2413) 1.1d ago; food (225,2410) 0.1d ago
+  slot 2318 day 28.50 (227, 2412) soil e   587  rest hd 3  moved 16 cells so far  plants r5 34 r10 137  scores: forage 0.313, wander 0.255, rest 0.327  memory: food (226,2413) 1.6d ago; food (225,2410) 0.0d ago
+  slot 2318 day 29.00 (226, 2411) soil e   664  rest hd 5  moved 17 cells so far  plants r5 35 r10 146  scores: forage 0.236, wander 0.355, rest 0.369  memory: food (226,2413) 2.1d ago; food (225,2410) 0.3d ago; food (223,2412) 0.0d ago
+  slot 2318 day 29.50 (226, 2411) soil e   642  rest hd 5  moved 17 cells so far  plants r5 35 r10 146  scores: forage 0.259, wander 0.355, rest 0.357  memory: food (226,2413) 2.6d ago; food (225,2410) 0.8d ago; food (223,2412) 0.0d ago
+  slot 2318 day 30.00 (231, 2406) rock e   611  rest hd 7  moved 22 cells so far  plants r5 0 r10 55  scores: seek food 0.214, wander 0.183, rest 0.342  memory: food (226,2413) 3.1d ago; food (225,2410) 1.3d ago; food (223,2412) 0.3d ago
+  slot 2318 day 30.50 (231, 2406) rock e   589  rest hd 7  moved 22 cells so far  plants r5 0 r10 56  scores: seek food 0.211, wander 0.189, rest 0.329  memory: food (226,2413) 3.6d ago; food (225,2410) 1.8d ago; food (223,2412) 0.8d ago
+  slot 2318 day 31.00 (231, 2406) rock e   567  rest hd 7  moved 22 cells so far  plants r5 0 r10 57  scores: seek food 0.204, wander 0.195, rest 0.316  memory: food (226,2413) 4.1d ago; food (225,2410) 2.3d ago; food (223,2412) 1.3d ago
+  slot 2318 day 31.50 (231, 2406) rock e   544  rest hd 7  moved 22 cells so far  plants r5 0 r10 57  scores: seek food 0.194, wander 0.201, rest 0.303  memory: food (226,2413) 4.6d ago; food (225,2410) 2.8d ago; food (223,2412) 1.8d ago
+  slot 2318 day 32.00 (231, 2406) rock e   522  rest hd 7  moved 22 cells so far  plants r5 0 r10 59  scores: seek food 0.181, wander 0.208, rest 0.290  memory: food (226,2413) 5.1d ago; food (225,2410) 3.3d ago; food (223,2412) 2.3d ago
+  slot 2318 day 32.50 (231, 2406) rock e   500  rest hd 7  moved 22 cells so far  plants r5 0 r10 58  scores: seek food 0.169, wander 0.213, rest 0.280  memory: food (226,2413) 5.6d ago; food (225,2410) 3.8d ago; food (223,2412) 2.8d ago
+  slot 2318 day 33.00 (231, 2406) rock e   478  rest hd 7  moved 22 cells so far  plants r5 0 r10 59  scores: seek food 0.150, wander 0.219, rest 0.267  memory: food (225,2410) 4.3d ago; food (223,2412) 3.3d ago
+  slot 2318 day 33.50 (231, 2406) rock e   456  rest hd 7  moved 22 cells so far  plants r5 0 r10 59  scores: seek food 0.129, wander 0.225, rest 0.255  memory: food (225,2410) 4.8d ago; food (223,2412) 3.8d ago
+  slot 2318 day 34.00 (231, 2406) rock e   434  rest hd 7  moved 22 cells so far  plants r5 0 r10 59  scores: seek food 0.104, wander 0.231, rest 0.242  memory: food (225,2410) 5.3d ago; food (223,2412) 4.3d ago
+  slot 2318 day 34.50 (236, 2401) rock e   403  wander hd 7  moved 27 cells so far  plants r5 0 r10 0  scores: seek food 0.078, wander 0.240, rest 0.224  memory: food (225,2410) 5.8d ago; food (223,2412) 4.8d ago
+  slot 2318 day 35.00 (248, 2389) rock e   360  wander hd 7  moved 39 cells so far  plants r5 0 r10 0  scores: seek food 0.055, wander 0.250, rest 0.204  memory: food (223,2412) 5.3d ago
+  slot 2318 day 35.50 (260, 2377) rock e   317  wander hd 7  moved 51 cells so far  plants r5 0 r10 0  scores: seek food 0.020, wander 0.262, rest 0.179  memory: food (223,2412) 5.8d ago
+  slot 2318 day 36.00 (272, 2365) rock e   273  wander hd 7  moved 63 cells so far  plants r5 0 r10 0  scores: wander 0.274, rest 0.154  memory: -
+  slot 2318 day 36.50 (284, 2353) rock e   230  wander hd 7  moved 75 cells so far  plants r5 0 r10 0  scores: wander 0.287, rest 0.129  memory: -
+  slot 2318 day 37.00 (296, 2341) rock e   187  wander hd 7  moved 87 cells so far  plants r5 0 r10 0  scores: wander 0.299, rest 0.104  memory: -
+  slot 2318 day 37.50 (308, 2329) rock e   144  wander hd 7  moved 99 cells so far  plants r5 0 r10 0  scores: wander 0.309, rest 0.084  memory: -
+  slot 2318 day 38.00 (320, 2317) rock e   101  wander hd 7  moved 111 cells so far  plants r5 0 r10 0  scores: wander 0.321, rest 0.059  memory: -
+  slot 2318 day 38.50 (332, 2305) rock e    57  wander hd 7  moved 123 cells so far  plants r5 0 r10 0  scores: wander 0.333, rest 0.034  memory: -
+  slot 2318 day 39.00 (344, 2293) rock e    14  wander hd 7  moved 135 cells so far  plants r5 0 r10 0  scores: wander 0.345, rest 0.009  memory: -

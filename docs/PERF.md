@@ -132,7 +132,8 @@ speed). Headless runs still use every core.
 ### Reproduce
 
 The profile harness writes to `batch_output/` (gitignored). Copy runs worth keeping into
-`docs/perf/<phase>/`.
+`docs/perf/<phase>/`. `tools/profile_spike.gd` and the spike were removed in Phase 3; check out
+tag `phase-02-done` to rerun the Phase 1 and 2 commands below.
 
 ```bash
 tools/godot.sh --headless --path . --script res://tools/profile_spike.gd -- --counts=1000,10000,50000,100000 --warmup=500 --ticks=200
@@ -170,8 +171,6 @@ a sequential seed step. Sources: `perf_p2_mature.json` (`--env-warmup=38400`) an
 
 ### Tick cost with flora enabled (100k spike entities)
 
-| | mean ms | p95 ms | ticks/s | env ms | decide | propose | resolve | blocked/tick |
-|---|---:|---:|---:|---:|---:|---:|---:|---:|
 | | mean ms | p95 ms | ticks/s | env ms | decide | propose | resolve | blocked/tick |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
 | environment off | 57.22 | 61.13 | 17.5 | — | 19.07 | 5.17 | 32.98 | 19,917 |
@@ -216,6 +215,8 @@ a second. That is roughly 1% of sim time at 14 ticks/s.
 
 ### Reproduce (Phase 2)
 
+At tag `phase-02-done` (the spike profiler is gone after it):
+
 ```bash
 tools/godot.sh --headless --path . --script res://tools/profile_spike.gd -- --env-warmup=38400 --counts=0,100000 --warmup=500 --ticks=200
 tools/godot.sh --headless --path . --script res://tools/profile_spike.gd -- --counts=0,100000 --warmup=500 --ticks=200 --set=env.enabled=false
@@ -225,3 +226,208 @@ tools/godot.sh --headless --path . --script res://tools/harvest_experiment.gd
 
 Acceptance artifacts from the 10-year run, the harvest experiment, and the full-scale
 determinism check are in `docs/reports/phase-02/`.
+
+## Phase 3: entities
+
+Same machine and engine as Phases 1 and 2. Real entities replace the spike. Raw results are in
+`docs/perf/phase-03/`.
+
+### Method
+
+The Phase 1 method: `tools/profile.gd`, headless, 8 worker threads, the full 4096² map with
+flora on, 200 measured ticks at steady state. Differences:
+
+- **Mature flora:** a 38,400-tick (5-year) environment warmup first, like Phase 2's mature row.
+- **Entities come from the founder spawner**, in groups of 250, not uniform random.
+- **Entity warmup is 2,000 ticks, not 500.** Founders start with staggered energy, and the
+  population needs about a day of hunger cycling (96 ticks per day) before decisions, movement
+  and eating settle.
+- **Every final row is measured in summer** (`--season=summer`: before each count, entity-free
+  ticks run until its 200 measured ticks start on summer day 3). The pre-fix rows ran the counts
+  back to back, so 10k was measured in early summer, 50k in autumn and 100k in winter.
+
+About 1 to 2% of each population starved during warmup (founders placed on poor land). The
+tables show the count alive while measuring.
+
+### Current: ms per tick after the search fixes (second Phase 3 commit, summer)
+
+Search fixes S1-S3 (S1 as adopted: with food in sight, crowding only moves an entity that would
+rest rather than eat), directed search and sweep, rest with no food in sight, save format v4.
+These are on top of the commit-b395890 rows below. Same method and season. Sources:
+`perf_p3_search.json`, `perf_p3_search_hungry.json`, `perf_p3_search_lowflora.json`.
+
+| population | entities | mean ms | p50 | p95 | max | ticks/s | env | decide | propose | resolve | deaths | interact | corpses | decisions/tick | moves/tick | blocked/tick | deaths in 200 ticks |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| default | 9,978 | 15.06 | 15.00 | 15.90 | 17.52 | 66.4 | 9.53 | 4.15 | 0.64 | 0.55 | 0.00 | 0.14 | 0.00 | 1,012 | 44 | 1 | 1 |
+| default | 49,701 | 34.53 | 33.96 | 37.86 | 39.94 | 29.0 | 9.60 | 19.24 | 2.72 | 2.23 | 0.01 | 0.68 | 0.02 | 5,042 | 250 | 5 | 5 |
+| default | 99,378 | **57.62** | 56.23 | 63.41 | 75.82 | **17.4** | 9.14 | 37.51 | 5.23 | 4.38 | 0.01 | 1.26 | 0.04 | 10,080 | 564 | 10 | 6 |
+| hungry: `entity.burn_floor` 0.76 | 98,874 | 62.47 | 61.70 | 66.92 | 70.38 | 16.0 | 9.72 | 39.04 | 6.47 | 4.63 | 0.01 | 2.51 | 0.04 | 10,115 | 831 | 15 | 8 |
+| hungry and mobile: flora thinned to 10% | 95,891 | **64.25** | 62.92 | 73.10 | 81.62 | **15.6** | 6.29 | 40.46 | 7.39 | 6.76 | 0.03 | 2.84 | 0.44 | 9,783 | 5,235 | 31 | 609 |
+
+Decide against the commit-b395890 rows below (same season): 10k +2.7%, 50k +4.7%, 100k +2.3%,
+hungry +0.4%, low flora +4.7%. **No decide regression above 10%.** Every 100k row is at least
+10 ticks/s, so **stay on GDScript** (worst 15.6, a 1.56× margin).
+
+**Blocking stays low with the adopted S1.** The first S1 dropped the crowd term for every entity
+with food in sight. Its rows had 115 / 289 / 439 blocked moves per tick (default / hungry /
+low flora) and 119 deaths in 200 ticks in the hungry row. Sated entities no longer left food
+and boxed hungry ones in. With the adopted rule these are 10 / 15 / 31 blocked moves and 8
+deaths.
+
+### After the follow-up fixes (commit b395890, summer)
+
+Behaviour fixes A and B, the death check after every cost, and derived energy costs. Sources:
+`perf_p3_fixed.json`, `perf_p3_hungry.json`, `perf_p3_lowflora.json`.
+
+| population | entities | mean ms | p50 | p95 | max | ticks/s | env | decide | propose | resolve | deaths | interact | corpses | decisions/tick | moves/tick | blocked/tick | deaths in 200 ticks |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| default | 9,895 | 14.97 | 14.86 | 15.56 | 16.44 | 66.8 | 9.55 | 4.04 | 0.61 | 0.57 | 0.00 | 0.14 | 0.01 | 1,003 | 75 | 1 | 1 |
+| default | 49,205 | 33.53 | 32.95 | 36.74 | 41.31 | 29.8 | 9.46 | 18.38 | 2.62 | 2.28 | 0.01 | 0.66 | 0.07 | 4,988 | 378 | 6 | 13 |
+| default | 98,341 | **57.23** | 56.08 | 62.47 | 66.05 | **17.5** | 9.29 | 36.65 | 5.16 | 4.63 | 0.01 | 1.30 | 0.14 | 9,968 | 870 | 11 | 40 |
+| hungry: `entity.burn_floor` 0.76 (base burn 1.2 per tick, 2×) | 97,925 | 62.26 | 62.89 | 67.11 | 73.86 | 16.1 | 9.86 | 38.90 | 6.07 | 4.83 | 0.01 | 2.47 | 0.07 | 10,010 | 1,108 | 11 | 24 |
+| hungry and mobile: flora thinned to 10% at spawn | 94,728 | **61.56** | 60.21 | 67.69 | 77.17 | **16.2** | 6.86 | 38.65 | 6.15 | 6.42 | 0.03 | 2.84 | 0.56 | 9,664 | 4,089 | 26 | 786 |
+
+- **The raised-burn row is hungry but not mobile.** Food is close, so its entities eat more
+  often (interact 2.47 ms) but move little (1,108 moves per tick). The low-flora row is the
+  mobile one: they search, with 4,089 moves per tick (4.7× the default), resolve 6.42 ms, and 786
+  deaths in the 200 measured ticks.
+- **Even the low-flora row is far from the Phase 1 spike's mobility** (about 100k moves per
+  tick, resolve 33 ms). Searching entities still rest until hunger passes about 0.5.
+
+### Pre-fix rows (kept for comparison)
+
+After the decide optimisation, before the follow-up fixes (13 genes, old utility, death check
+before movement cost). The counts ran back to back, so the measurement seasons differ. Source:
+`perf_p3_prefix.json`.
+
+| entities | season | mean ms | p50 | p95 | max | ticks/s | env | decide | propose | deaths | resolve | interact | corpses | decisions/tick | moves/tick | blocked/tick |
+|---:|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| 9,910 | early summer | 14.69 | 14.58 | 15.25 | 16.23 | 68.1 | 9.29 | 4.00 | 0.64 | 0.00 | 0.56 | 0.15 | 0.01 | 1,005 | 73 | 1 |
+| 49,092 | autumn | 31.30 | 30.93 | 34.08 | 36.39 | 31.9 | 9.50 | 15.97 | 2.84 | 0.00 | 2.24 | 0.62 | 0.08 | 4,981 | 294 | 5 |
+| 97,997 | winter | 57.80 | 56.78 | 62.72 | 68.27 | 17.3 | 7.21 | 34.86 | 6.16 | 0.01 | 5.06 | 4.26 | 0.20 | 9,979 | 1,804 | 11 |
+
+### Changes against the pre-fix Phase 3 numbers (100k)
+
+| phase | pre-fix (winter) | final (summer) | change |
+|---|---:|---:|---|
+| whole tick | 57.80 | 57.23 | −0.6 |
+| env | 7.21 | 9.29 | +2.1: season (summer growth), not code |
+| decide | 34.86 | 36.65 | **+1.8 (+5%)**: more hungry wanderers re-deciding; the decide code path is the same |
+| propose | 6.16 | 5.16 | −1.0 |
+| resolve | 5.06 | 4.63 | −0.4 |
+| interact | 4.26 | 1.30 | −3.0: winter's low yields meant more bites per meal |
+| corpses | 0.20 | 0.14 | −0.06 |
+
+- **Most differences are the season** the pre-fix 100k row happened to be measured in.
+- **The same-state comparison is closer:** `decide_bench` on its saved summer state gave a
+  58.5 ms tick and 37.3 ms decide before the follow-up; the final summer row is 57.2 and 36.7.
+- **No regression is flagged beyond decide's +5%,** which is within the spread of season and
+  population effects.
+- **The derived costs cost nothing per tick:** they are read from arrays filled at spawn.
+
+### Decision rule (spec section 13), applied to the 100k rows
+
+| 100k row | ticks/s | rule |
+|---|---:|---|
+| default population, summer | 17.5 | ≥ 10: stay on GDScript |
+| hungry (2× base burn) | 16.1 | ≥ 10: stay |
+| hungry and mobile (10% flora) | 16.2 | ≥ 10: stay |
+
+**Every 100k row is at 10 ticks/s or more, so the rule says stay on GDScript.** The worst row
+leaves a 1.6× margin.
+
+Before the decide optimisation, the first measurement was 100.57 ms per tick, 9.9 ticks/s
+(`perf_p3_before_opt.json`), with decide at 78.39 ms. That is in the 5 to 10 band, so decide was
+optimised, without changing any decision:
+
+| step | decide µs per decision, 1 thread | decide ms per tick, 100k, 8 threads | whole tick ms |
+|---|---:|---:|---:|
+| first version | 32.0 | 73.1 | 93.9 |
+| entities in sight counted natively per row; food scan outward with a distance cutoff | 21.4 | | |
+| plus a per-row bound on each plant type's best possible bite | **18.0** | **37.3** | **58.5** |
+
+Measured with `tools/decide_bench.gd` on one saved 100k steady state (summer). Each step
+printed the same hash of everything decide writes. The gate rerun also reproduced the
+pre-optimisation run's alive counts, moves, blocked moves and deaths exactly.
+
+The phase doc asks for the options when the result lands at 5 to 10. It landed there before the
+optimisation, so here they are:
+
+1. **Stay on GDScript (recommended).** 15.6 to 17.4 ticks/s at 100k after the search fixes (16.1 to 17.5 before them).
+2. **More GDScript levers if later phases use the margin up:**
+   - `entity.decision_interval` (10 → 20 roughly halves decide).
+   - A cheap re-decision for sated, resting entities.
+   - Per-block food summaries so the food scan skips poor blocks.
+   - All change behaviour, so each needs re-validation.
+3. **Port decide alone to a Rust GDExtension.** It is a pure function of read-only state per
+   entity and runs in parallel, so it is the easiest piece to port. `decide_bench`'s output hash
+   checks a port bit for bit.
+4. **Port the whole sim core**, as Phase 1 planned. Not needed now. No Rust port was started.
+
+### Top three bottlenecks (100k, final default row)
+
+1. **Decide: 36.7 ms (64%).** Per decision, single-threaded:
+
+   | part | µs |
+   |---|---:|
+   | food scan | about 8.5 |
+   | setup and entities in sight | 3.2 |
+   | utilities | 1.8 |
+   | memory | 1.6 |
+   | corpse and water blocks | 1.5 |
+   | choose and set the target | 1.4 |
+
+   It scales about 5× on 8 threads.
+2. **Environment: 9.3 ms (16%).** Unchanged from Phase 2; season-dependent.
+3. **Propose: 5.2 ms (9%).** Per-entity burn, ageing, target stepping and the cost-weighted step.
+
+Next are **resolve (4.6 ms; 6.4 in the mobile row)** and **interact (1.3 ms; 2.8 in the mobile
+row)**. Both are sequential, so threads cannot help them.
+
+### Against Phase 2 (100k spike entities, mature flora: 68.69 ms, 14.6 ticks/s)
+
+| phase | Phase 2 ms | Phase 3 final ms | change |
+|---|---:|---:|---|
+| whole tick | 68.69 | 57.23 | −11.5 |
+| env | 10.32 | 9.29 | −1.0 |
+| decide | 16.83 | 36.65 | **+19.8, regression**: real perception, memory and utility scoring instead of the spike's gradient seek |
+| propose | 5.59 | 5.16 | −0.4 |
+| resolve | 35.93 | 4.63 | −31.3 |
+| interact | — | 1.30 | new (sequential) |
+| corpses | — | 0.14 | new |
+
+**Resolve's drop is the workload, not an optimisation.** The spike moved every entity every
+tick (18,526 blocked per tick). Fed entities mostly rest (870 moves and 11 blocked per tick
+here; 4,089 and 26 in the mobile row). A population as mobile as the spike would push resolve
+back toward 33 ms, sequential. Read the whole-tick gain with that in mind.
+
+### Perception structure (scope 5: hash or grid, by profiling)
+
+`tools/perception_bench.gd`: single thread, the real map, founder-placed entities, radius 5
+(121 cells), 10,000 sampled decisions. Values are µs per decision.
+
+| entities | grid: flora only | grid: flora + occupancy | entities via grid, per cell | entities via grid, native row counts | hash build ms per tick | hash query | entities via hash (build share + query) |
+|---:|---:|---:|---:|---:|---:|---:|---:|
+| 10,000 | 10.97 | 16.73 | 5.77 | **2.63** | 4.89 | 4.61 | 9.50 |
+| 50,000 | 10.77 | 15.84 | 5.07 | **2.61** | 13.70 | 4.39 | 7.13 |
+| 100,000 | 10.81 | 15.87 | 5.06 | **2.49** | 25.05 | 4.40 | 6.90 |
+
+**Entities are perceived through the grid**, by native row counts since the optimisation.
+- A spatial hash costs more per decision.
+- Its rebuild (25 ms per tick at 100k) is sequential, while grid reads run in the parallel
+  decide.
+- Food has to be read from the grid either way.
+
+Reading corpse and substrate per cell added about 8 µs per decision (grid_all 23.9 against
+grid flora + occupancy 15.9). Corpses and water are therefore read only inside 8×8 perception
+blocks that have any.
+
+### Reproduce (Phase 3)
+
+```bash
+tools/godot.sh --headless --path . --script res://tools/profile.gd -- --env-warmup=38400 --counts=10000,50000,100000 --warmup=2000 --ticks=200 --season=summer --out=res://batch_output/perf_p3_search.json
+tools/godot.sh --headless --path . --script res://tools/profile.gd -- --env-warmup=38400 --counts=100000 --warmup=2000 --ticks=200 --season=summer --set=entity.burn_floor=0.76 --out=res://batch_output/perf_p3_search_hungry.json
+tools/godot.sh --headless --path . --script res://tools/profile.gd -- --env-warmup=38400 --counts=100000 --warmup=2000 --ticks=200 --season=summer --thin-flora=0.1 --out=res://batch_output/perf_p3_search_lowflora.json
+tools/godot.sh --headless --path . --script res://tools/decide_bench.gd -- --rebuild --ticks=200
+tools/godot.sh --headless --path . --script res://tools/perception_bench.gd
+```
