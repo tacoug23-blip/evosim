@@ -22,6 +22,8 @@
 ##      including the derived energy costs (entity.base_burn, rest_burn, sense_burn,
 ##      move_cost); the Phase 1 spike is gone. Versions 1-2 still load (no entities; spike
 ##      blocks skipped, occupancy cleared).
+##   4  Phase 3 search: entity.search_leg and entity.search_from (the search sweep). Version 3
+##      files still load, with no sweep running.
 ##
 ## Not saved, because they are pure functions of the seed and tick: in-game time, the climate
 ## grid, weather, and the stateless env.sample / env.weather hash seeds. Every stateful RNG
@@ -34,7 +36,7 @@ const World := preload("res://sim/world/world.gd")
 const SimCore := preload("res://sim/core/sim_core.gd")
 
 const MAGIC := "EVOS"
-const FORMAT_VERSION := 3
+const FORMAT_VERSION := 4
 ## Oldest format version this build still reads.
 const MIN_READ_VERSION := 1
 const ENCODING_RAW := 0

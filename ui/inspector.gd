@@ -61,7 +61,8 @@ func show_data(d: Dictionary) -> void:
 	lines.append("%s, age %.1f days, at (%d, %d)" % [d["sex"], d["age_ticks"] / ticks_per_day, d["x"], d["y"]])
 	lines.append("energy [b]%.0f[/b] / %.0f   hp %.0f   meals %d" % [d["energy"], d["max_energy"], d["hp"], d["meals"]])
 	var target: Array = d["target"]
-	lines.append("action [b]%s[/b]%s%s" % [d["action"], (" -> (%d, %d)" % [target[0], target[1]]) if target.size() == 2 else "",
+	lines.append("action [b]%s[/b]%s%s%s" % [d["action"], (" -> (%d, %d)" % [target[0], target[1]]) if target.size() == 2 else "",
+			"" if d["search"] == "" else " (searching: %s)" % d["search"],
 			"" if d["decided"] == d["action"] else "  (decided %s; ended or given up since)" % d["decided"]])
 	lines.append("carrying %s   neighbours in sight %d   nearest water %s   stuck %d" % [
 			"corpse %d" % d["carrying"] if d["carrying"] >= 0 else "nothing", d["neighbors"],

@@ -182,6 +182,64 @@ func test_reads_pre_v3_layouts() -> void:
 		check_eq(loaded.entities.check_invariants(), "", "v%d: founders run on the loaded world" % version)
 
 
+## A version 3 file as that build wrote it: entity and corpse blocks without the search sweep
+## (entity.search_leg / entity.search_from, version 4) and a parameter snapshot without the search
+## params. It loads with every entity intact and nobody mid-sweep, and the sim runs on.
+func test_reads_version_3_layout() -> void:
+	var core := _running_core(17, 30)
+	var e: RefCounted = core.entities
+	var swept := -1
+	for i in e.capacity:
+		if e.alive[i] == 1:
+			swept = i
+			break
+	e.action[swept] = 4  # WANDER, mid-sweep
+	e.search_leg[swept] = 2
+	e.search_from[swept] = e.y[swept] * core.world.width + e.x[swept]
+	var snap: Dictionary = core.params.snapshot()
+	for id: String in ["entity.search_leg_radii", "entity.search_lookback_radii", "entity.search_rest_hunger"]:
+		snap.erase(id)
+	var header := {"format_version": 3, "seed": core.rngs.master_seed, "tick": core.tick,
+			"width": core.world.width, "height": core.world.height, "params": snap, "rng": core.rngs.get_state(),
+			"substrates_hash": core.substrates.source_hash, "flora_hash": core.flora.source_hash,
+			"env_counters": core.env.get_counters(), "world_hash": core.world_hash(),
+			"genes_hash": core.genes.source_hash, "entities": e.header(), "corpses": core.corpses.header()}
+	var blocks := {}
+	for layer_name: String in core.world.layer_names():
+		blocks["world." + layer_name] = core.world.layer_bytes(layer_name)
+	blocks.merge(e.export_blocks())
+	blocks.merge(core.corpses.export_blocks())
+	check(blocks.erase("entity.search_leg") and blocks.erase("entity.search_from"), "version 3 has no sweep blocks")
+	var path := tmp_path("v3_layout.evosave")
+	var f := FileAccess.open(path, FileAccess.WRITE)
+	f.store_buffer(SaveLoad.MAGIC.to_ascii_buffer())
+	f.store_32(3)
+	var hb := JSON.stringify(header).to_utf8_buffer()
+	f.store_32(hb.size())
+	f.store_buffer(hb)
+	f.store_32(blocks.size())
+	for block_name: String in blocks:
+		SaveLoad._store_block(f, block_name, blocks[block_name])
+	f.close()
+	var res := SaveLoad.load_file(path)
+	check_eq(res["error"], "", "version 3 layout loads")
+	var loaded: RefCounted = res["core"]
+	if loaded == null:
+		return
+	var le: RefCounted = loaded.entities
+	check_eq(loaded.world_hash(), core.world_hash(), "world identical")
+	check_eq(le.count, e.count, "every entity loaded")
+	check_eq(le.x, e.x, "positions identical")
+	check_eq(le.energy, e.energy, "energy identical")
+	check_eq(le.genome, e.genome, "genomes identical")
+	check_eq(le.search_leg.size(), le.capacity, "sweep state sized to capacity")
+	check_eq(le.search_leg.count(255), le.capacity, "nobody is mid-sweep after a version 3 load")
+	check_eq(le.search_from.count(-1), le.capacity, "no sweep origins")
+	for t in 5:
+		loaded.step()
+	check_eq(le.check_invariants(), "", "the sim runs on after the load")
+
+
 func test_corrupted_layer_detected() -> void:
 	SaveLoad.quiet = true
 	var core := make_core("test_tiny", {"world.seed": 8})

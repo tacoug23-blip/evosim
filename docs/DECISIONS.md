@@ -365,8 +365,10 @@ Non-obvious choices and why. Newest phase at the bottom. If a decision here conf
   - eat corpse = same shape, with corpse nutrition, only if `corpse.edible`
   - seek remembered food = *forage* × h × `memory_trust` × freshness, only with no food in sight
   - wander = *explore* × (`wander_base` + `wander_hunger` × h when no food is in sight) +
-    `crowd_weight` × crowding (a remembered food cell does not remove the hunger term: Flaw A below)
-  - rest = *rest* × (1 − h)
+    `crowd_weight` × crowding × (1 − h) when no food is in sight (a remembered food cell does not
+    remove the hunger term: Flaw A below; crowding: S1 below)
+  - rest = *rest* × (1 − h) with food in sight; *rest* × max(0, 1 − h / `search_rest_hunger`)
+    without (S3 below)
   - pick up corpse = *carry_corpse* × (1 − h)
   - drop = `drop_weight` × carried time + h
 
@@ -410,9 +412,10 @@ Non-obvious choices and why. Newest phase at the bottom. If a decision here conf
     not, and only non-searchers turn away from crowds. No new per-entity field: the heading is
     already stored, and "searching" is recomputed at each decision. After the fix the slowest
     member moves 115 cells (test: all ≥ 100 in 240 ticks).
-- **Open after the fixes: deaths rose from 39 to 58 of 5,000** in the 60-day abundant run (98.8%
+- **After fixes A and B, deaths rose from 39 to 58 of 5,000** in the 60-day abundant run (98.8%
   survive; the bar is 95%). All 58 died on rock with no plant within 10 cells; 47 never ate.
-  Traced causes, all in the placeholder utility, not code faults:
+  **Closed by the search fixes S1-S3 below: 11 deaths (99.8%).** The traced causes were, all in
+  the placeholder utility, not code faults:
   - **The search is a straight line in a random direction that never turns back.** With sense
     radius 5, food 6 cells behind the searcher is lost; searchers walked 130-145 cells across rock
     and died. Fix B sends more entities on this search (crowded ones used to random-walk locally,
@@ -423,10 +426,95 @@ Non-obvious choices and why. Newest phase at the bottom. If a decision here conf
     instead of going back.
   - **Crowding inflates wander even with food in sight** (wander 0.6-0.7 with 14 neighbours
     against forage 0.39).
-  - Options, not applied (they change behaviour): a correlated random walk or a return toward
-    the last remembered food after some ticks of fruitless search; seek scored without the rest
-    trade-off once a memory exists, or a higher `entity.memory_trust`; crowd weight scaled by
-    (1 − hunger).
+
+### Search (second Phase 3 commit)
+
+- **S1, crowding:** the crowd term of wander is × (1 − hunger). **With food in sight it applies
+  only when the entity would rest rather than eat** (forage scores below rest).
+  - Crowding therefore never takes an entity away from food it would eat. Tested: hunger 0.56,
+    24 in sight, forage 0.54 beats wander 0.105; it was wander 0.705 before.
+  - Sated entities still leave crowded feeding spots.
+  - **The first version dropped the term for every entity with food in sight.** Sated entities
+    then stayed on food and boxed hungry ones in. About 7 of 16 deaths in the abundant run
+    starved next to food; one had 26 plants within 5 cells, its short path blocked by 13-19
+    resting neighbours, and it gave up and retried until it died.
+  - Measured against the variant:
+
+    | | first version | variant |
+    |---|---:|---:|
+    | abundant deaths | 16 | 11, none next to food |
+    | hungry 100k row: blocked moves per tick | 289 | 15 |
+    | hungry 100k row: deaths in 200 ticks | 119 | 8 |
+    | hungry 100k row: tick | 59.8 ms | 60.5 ms |
+- **S2, directed search.** A searcher (hungry ≥ `entity.search_hunger`, no food in sight, wander
+  won) heads for its most recent remembered food cell, even a stale one. A remembered cell that is
+  in sight while no food is in sight is forgotten (the spot was reached and is empty, or eaten
+  out), and the next memory or the sweep takes over.
+- **Search pattern, with no memory: look back, then a diagonal zigzag sweep.**
+  - The first leg goes back the way the entity was heading, `entity.search_lookback_radii` × sense
+    radius (3 cells), so food just out of sight behind it is seen. Tested: food 6 cells behind
+    the start is eaten within T = 100 ticks; a straight line never finds it.
+  - Then legs of `entity.search_leg_radii` × sense radius (10 cells, the first one half) alternate
+    45° either side of a cardinal axis (the one at or next to the entity's heading).
+  - On a grid every diagonal step advances one cell along the axis, so the sweep keeps full
+    speed away from where it started while seeing a band about twice as wide as a straight
+    line. A spiral would cover nearby ground best but keeps the entity near its start, which
+    fails the stranded-cluster requirement (≥ 100 cells net in 240 ticks; the sweep gives 110 to
+    114).
+  - Water or the map edge turns the axis 90° (side from `Rng.hash3`).
+  - **New per-entity state:** two SoA arrays, `search_leg` (u8: the leg, 255 = not sweeping) and
+    `search_from` (i32: where the leg began). Propose turns legs; decide starts and stops sweeps.
+    Both are hashed and saved.
+  - **Save format version 4** adds their blocks (`entity.search_leg`, `entity.search_from`).
+    Versions 1, 2 and 3 still load, and a version 3 save loads with nobody mid-sweep. The test
+    writes a real version 3 layout (no sweep blocks, no search params) with an entity mid-sweep
+    and checks the load.
+  - The parameters are named `entity.search_leg_radii` and `entity.search_lookback_radii`
+    (unit: sense radii), apart from the `search_leg` array.
+- **Wanderers blocked by other entities for `entity.stuck_ticks` now turn.** Only target-seeking
+  actions gave up before. With structured headings, a 2×2 group sweeping diagonally into each
+  other's cells blocked itself for good (found by the stranded-cluster test).
+- **S3, rest against seek: with no food in sight, rest falls linearly to 0 at hunger
+  `entity.search_rest_hunger` (0.5)**, instead of rest × (1 − hunger).
+  - With a fresh memory, seek beats rest from hunger 0.294 (was 0.417), and at the seek/wander
+    crossover f* from 0.317 (f* = 0.82 there; was 0.53).
+  - Tested from hunger 0.28 with a fresh memory: the entity rests, then seeks at tick 48 (hunger
+    0.306, freshness 0.915 > f* 0.840). Before, it rested 498 ticks and then searched at random
+    with the memory at 0.13.
+  - **This applies with or without a memory: wider than S3 asked.** Memory-only was not enough:
+    with S1 halving the crowd term at hunger 0.5, a searcher that left its group lost to rest
+    (0.23 against 0.25) and rested about 60 ticks until hunger 0.53, failing the
+    stranded-cluster test. The traces had also shown "rest until hunger 0.53, then search with
+    47% energy" as a cause of death. A hungry entity with no food in sight now starts looking at
+    hunger 0.317.
+- **Results:**
+  - Abundant run: **11 deaths of 5,000 (99.8%)**, against 39 (pre-fix) and 58 (after A and B).
+    All 11 are rock or sand starts with no plant within 10 cells; none died next to food.
+  - Low flora (10%): 96.0% survive (was 89.8%).
+  - No flora: all starve by day 16, not 18. Searchers walk where resters waited.
+  - The 512² stress run: see open items.
+- **Open items (traced, not fixed here):**
+  - **Seek ignores food value.** Slot 4174 starved on day 59 oscillating between a nearly
+    worthless remembered plant and wandering. In late autumn forage scored 0.03, so wander
+    (0.105) won while the plant was in sight, but seek does not know what a remembered cell is
+    worth and scored 0.6 once it was out of sight.
+    - Valuing a memory needs its item and value stored in the memory ring, a layout change.
+      To be decided in Phase 4.
+    - A cheaper stopgap: plants whose quality q is below a threshold are not food (not
+      remembered, and do not stop a search).
+  - **The sweep direction is random.** Slot 4609 started on bare rock with nothing within 10
+    cells; its sweep axis pointed east, and it zigzagged 150 cells across rock while 295 plants
+    lay within 25 cells in another direction. Most remaining abundant-run deaths are rock starts
+    like this.
+  - **The 512² determinism scenario now ends with 3 survivors and 18 plants.**
+    - Before: 320 pre-fix, 59 after fixes A and B, 27 with the first S1.
+    - It puts 5,972 founders (the full map's founder params) on 512², so the flora is grazed out.
+    - Active searching, and sated entities leaving crowded food, spend energy that resting would
+      have stretched, and eat the last plants.
+    - The hash still covers a year of mass starvation, corpses and decay, identical at 1, 3 and
+      8 threads, but it ends with almost no living population.
+    - Option: scale the scenario's founder count to the map area, so the hash also covers a
+      living population at the end.
 
 ### Movement
 
@@ -511,12 +599,21 @@ Non-obvious choices and why. Newest phase at the bottom. If a decision here conf
   real pre-v3 layouts). The clear was `(world.occupancy as PackedInt32Array).fill(0)`, and in Godot
   4.6 `(x as PackedInt32Array).fill()` fills a temporary copy. It now goes through a typed local
   variable, which writes through. That was the only mutating call on an `as` cast in the code.
+- **Packed-array writes, checked (second Phase 3 commit).**
+  - **Measured in Godot 4.6:** a packed array reached through a property, `get()`, a method's
+    return value, a Dictionary or Array element, or a typed local is the same array, so mutating
+    calls and index writes go through. Only an `as Packed*Array` cast yields a copy.
+  - **Code sweep:** no mutating call on a cast remains; the casts that remain feed `to_*_array()`,
+    `slice(0)` or `to_byte_array()`, which are meant to copy. 64 index writes go through
+    properties or elements (layers, entity arrays in tests, tools), all write-through.
+  - `tests/test_packed_arrays.gd` pins these rules and scans every script for a mutating call on
+    a cast, so the v1 bug cannot come back unnoticed.
 
 ### Other
 
-- **Perf gate: stay on GDScript.** 100k entities with mature flora run at 17.5 ticks/s (summer,
-  after the decide optimisation and the follow-up fixes; 9.9 before the optimisation), and 16.1
-  to 16.2 with a hungry population (2× base burn, or flora thinned to 10%); details in `PERF.md`.
+- **Perf gate: stay on GDScript.** 100k entities with mature flora run at 17.4 ticks/s (summer,
+  after the search fixes; 17.5 before them, 9.9 before the decide optimisation), and 15.6 to 16.0
+  with a hungry population (2× base burn, or flora thinned to 10%); details in `PERF.md`.
   The gate uses founder-spawned populations, a 2,000-tick entity warmup (500 was too short for the
   hunger cycle to settle), and `tools/profile.gd --season` so every row is measured in the same
   season.
@@ -532,8 +629,9 @@ Non-obvious choices and why. Newest phase at the bottom. If a decision here conf
 - **New parameters (all `tuned: false`):**
   - `entity.*`: decision_interval, memory_slots, perception_block, memory_days, memory_trust,
     bite_biomass, rest_burn_factor, food_rate_scale, wander_base, wander_hunger,
-    path_cost_weight, stuck_ticks, crowd_ref, crowd_weight, search_hunger, carry_speed_factor,
-    carry_move_cost_factor, carry_days, drop_weight, birth_sex_ratio
+    path_cost_weight, stuck_ticks, crowd_ref, crowd_weight, search_hunger, search_leg_radii,
+    search_lookback_radii, search_rest_hunger, carry_speed_factor, carry_move_cost_factor, carry_days,
+    drop_weight, birth_sex_ratio
   - `entity.*` derived-cost coefficients: burn_floor, burn_k_capacity, burn_k_speed, burn_k_digest,
     burn_k_memory, burn_k_hp, sense_cost_per_cell, move_cost_floor, move_cost_k_speed (an earlier
     draft's linear `entity.sense_cost` is replaced by sense_cost_per_cell)

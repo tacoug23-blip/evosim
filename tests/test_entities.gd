@@ -260,6 +260,103 @@ func test_fresh_memory_beats_wandering() -> void:
 	check_eq(below[0].entities.action[below[1]], EntitySystem.Action.WANDER, "wanders just below freshness %.3f" % f_star)
 
 
+## S1: crowding fades with hunger and is off while food is in sight.
+func test_crowded_hungry_entity_forages_food_in_sight() -> void:
+	var core := _flat()
+	_summer(core)
+	var e: RefCounted = core.entities
+	var food: int = core.world.index(27, 24)
+	core.env.plant(food, core.flora.id_of("berry_bush"), 150, true)
+	var i := _spawn_at(core, Vector2i(24, 24))
+	_set_energy_share(core, i, 0.4)  # hunger 0.56
+	for dy in range(-2, 3):
+		for dx in range(-2, 3):
+			if (dx != 0 or dy != 0) and not (dy == 0 and dx > 0):
+				_spawn_at(core, Vector2i(24 + dx, 24 + dy))
+	e.decide_one(i)
+	var s0: int = i * EntitySystem.ACTIONS
+	check(e.neighbors[i] >= 12, "crowded: %d entities in sight" % e.neighbors[i])
+	check(e.scores[s0 + EntitySystem.Action.FORAGE] > e.scores[s0 + EntitySystem.Action.WANDER],
+			"forage %.3f > wander %.3f" % [e.scores[s0 + EntitySystem.Action.FORAGE], e.scores[s0 + EntitySystem.Action.WANDER]])
+	check_eq(e.action[i], EntitySystem.Action.FORAGE, "it forages")
+
+
+## S2: a hungry searcher with only a stale memory heads for the remembered cell first.
+func test_stale_memory_search_heads_for_the_remembered_cell() -> void:
+	var core := _flat()
+	_summer(core)
+	var e: RefCounted = core.entities
+	var i := _spawn_at(core, Vector2i(10, 24))
+	_set_energy_share(core, i, 0.3)
+	e.heading[i] = 4  # west, away from the memory
+	var m0: int = i * e.memory_slots
+	e.mem_kind[m0] = EntitySystem.Mem.FOOD
+	e.mem_cell[m0] = core.world.index(40, 24)
+	e.mem_tick[m0] = e._tick - roundi(0.9 * e._mem_ticks)
+	e.decide_one(i)
+	check_eq(e.action[i], EntitySystem.Action.WANDER, "a stale memory loses to searching")
+	check_eq(e.heading[i], 0, "the search heads east, toward the remembered cell")
+
+
+## S2: with no memory, the sweep looks back first: food 6 cells behind the start (out of sight
+## at sense radius 5) is found and eaten within T = 100 ticks. A straight line never finds it.
+func test_sweep_finds_food_just_behind_the_start() -> void:
+	var core := _flat(64, 64)
+	_summer(core)
+	var e: RefCounted = core.entities
+	var food: int = core.world.index(34, 32)
+	core.env.plant(food, core.flora.id_of("berry_bush"), 150, true)
+	var i := _spawn_at(core, Vector2i(40, 32))
+	_set_energy_share(core, i, 0.4)
+	e.heading[i] = 0  # east, away from the food
+	var ate_at := -1
+	for t in 100:
+		core.step()
+		if e.meals[i] > 0:
+			ate_at = t + 1
+			break
+	check(ate_at > 0, "ate the food behind it within 100 ticks (tick %d)" % ate_at)
+
+
+## S3: with a fresh memory and hunger rising, rest gives way to seek while the memory is still
+## fresher than the seek/wander crossover f* (not to a search after it has gone stale).
+func test_fresh_memory_switches_rest_to_seek_before_it_is_stale() -> void:
+	var core := _flat(64, 64)
+	var e: RefCounted = core.entities
+	var i := _spawn_at(core, Vector2i(10, 32))
+	_set_energy_share(core, i, 0.648)  # hunger 0.28
+	core.step()
+	var m0: int = i * e.memory_slots
+	e.mem_kind[m0] = EntitySystem.Mem.FOOD
+	e.mem_cell[m0] = core.world.index(40, 32)
+	e.mem_tick[m0] = core.tick
+	e.action[i] = EntitySystem.Action.NONE
+	var p: RefCounted = core.params
+	var genes: RefCounted = core.genes
+	var explore: float = genes.default_value[genes.index_of("explore")]
+	var forage: float = genes.default_value[genes.index_of("forage")]
+	var rested := false
+	var switched := ""
+	for t in 600:
+		core.step()
+		var a: int = e.action[i]
+		if a == EntitySystem.Action.REST:
+			rested = true
+			continue
+		if a == EntitySystem.Action.NONE:
+			continue
+		var h: float = 1.0 - float(e.energy[i]) / e.sate_energy[i]
+		var fresh: float = 1.0 - float(core.tick - e.mem_tick[m0]) / e._mem_ticks
+		var f_star: float = explore * (p.get_float("entity.wander_base") + p.get_float("entity.wander_hunger") * h) \
+				/ (forage * h * p.get_float("entity.memory_trust"))
+		switched = "%s at tick %d, hunger %.3f, freshness %.3f, f* %.3f" % [EntitySystem.ACTION_NAMES[a], t, h, fresh, f_star]
+		check_eq(a, EntitySystem.Action.SEEK_FOOD, "rest gives way to seek (%s)" % switched)
+		check(fresh > f_star, "while the memory is fresher than f* (%s)" % switched)
+		break
+	check(rested, "it rested first")
+	check(switched != "", "it stopped resting within 600 ticks")
+
+
 ## A stranded founder cluster: 225 hungry entities 3 cells apart (about 11% density, like a
 ## founder group) on open land with no food anywhere. Each keeps a dozen others in sight, so
 ## turning away from the crowd at every decision made them random-walk in place (before the fix:

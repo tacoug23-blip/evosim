@@ -1,17 +1,17 @@
 Godot Engine v4.6.1.stable.official.14d19694e - https://godotengine.org
 
-run 1: 4096x4096 world in 6.3 s, 100000 founders (98653 alive after), 1000 ticks, mean 141.8 ms/tick
+run 1: 4096x4096 world in 6.6 s, 100000 founders (98952 alive after), 1000 ticks, mean 114.6 ms/tick
   world hash (at start) 69dd5358c60c29ee2ee5dbc1fdc577ba2288b1d7d59e90f226c1258791299fcd
-  entity hash           2fa2e50b3802809cf8e6bfe60fc7ecfc89a3409ea4cab8487623e9c8fb4f5ebd
-  full hash             938f10b2506845950e6130fa5dc01f6be682e2442bc200fabe5205877582dc67
+  entity hash           78b99e30f5b6459a86e84684db2183c19489455a42cb12306ffd14f809e7c8be
+  full hash             6c56fc208b663de0afbb3802b1bc6e769fc2e2ce1905ca556d55c331bb10833c
   one-per-cell + corpses: ok (checked every 1 ticks)
-run 2: 4096x4096 world in 18.7 s, 100000 founders (98653 alive after), 1000 ticks, mean 125.7 ms/tick
+run 2: 4096x4096 world in 8.7 s, 100000 founders (98952 alive after), 1000 ticks, mean 99.6 ms/tick
   world hash (at start) 69dd5358c60c29ee2ee5dbc1fdc577ba2288b1d7d59e90f226c1258791299fcd
-  entity hash           2fa2e50b3802809cf8e6bfe60fc7ecfc89a3409ea4cab8487623e9c8fb4f5ebd
-  full hash             938f10b2506845950e6130fa5dc01f6be682e2442bc200fabe5205877582dc67
+  entity hash           78b99e30f5b6459a86e84684db2183c19489455a42cb12306ffd14f809e7c8be
+  full hash             6c56fc208b663de0afbb3802b1bc6e769fc2e2ce1905ca556d55c331bb10833c
   one-per-cell + corpses: ok (checked every 1 ticks)
 same seed -> identical world hash: true
 same seed -> identical entity hash after 1000 ticks: true
 same seed -> identical full hash after 1000 ticks: true
-save 5.7 s (20.3 MB), load+verify 4.8 s -> identical world and full hash: true
+save 2.1 s (20.5 MB), load+verify 2.3 s -> identical world and full hash: true
 RESULT: PASS

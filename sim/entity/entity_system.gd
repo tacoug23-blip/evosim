@@ -51,6 +51,13 @@ const DIR_X_LIST := [1, 1, 0, -1, -1, -1, 0, 1]
 const DIR_Y_LIST := [0, 1, 1, 1, 0, -1, -1, -1]
 ## Heading for a unit step (dx, dy), indexed by (dy + 1) * 3 + (dx + 1). Centre = NO_DIR.
 const DIR_FROM_DELTA_LIST := [5, 6, 7, 4, NO_DIR, 0, 3, 2, 1]
+## Search sweep legs (search_leg): 0 look back (heading = axis + 4), 1 a half leg at axis + 1,
+## then full legs alternating axis - 1 (2) and axis + 1 (3). Per leg: the heading change at its end,
+## the next leg, and the offset from the heading to the sweep's cardinal axis.
+const NO_LEG := 255
+const LEG_TURN := [5, 6, 2, 6]
+const LEG_NEXT := [1, 2, 3, 2]
+const LEG_AXIS := [4, 7, 1, 7]
 ## Genes the entity system reads, by name (config/genes.json must define them).
 const GENE_NAMES := ["max_energy", "food_needed_to_sate", "digest_efficiency", "move_speed",
 		"sense_radius", "memory_capacity", "forage", "rest", "explore", "carry_corpse", "max_hp"]
@@ -108,6 +115,10 @@ var mem_kind := PackedByteArray()
 var mem_cell := PackedInt32Array()
 var mem_tick := PackedInt32Array()
 var mem_head := PackedByteArray()
+## Search sweep of a hungry entity with no food in sight or in memory: the current leg (NO_LEG
+## when not sweeping) and the cell where that leg began.
+var search_leg := PackedByteArray()
+var search_from := PackedInt32Array()
 
 # --- Derived from the genome when it is fixed (at spawn; at birth from Phase 4) ----------------
 var max_energy := PackedInt32Array()
@@ -193,6 +204,10 @@ var _stuck_limit := 1
 var _crowd_ref := 1.0
 var _crowd_weight := 0.0
 var _search_hunger := 0.0
+var _search_rest_hunger := 1.0
+## Sweep leg lengths in cells, by sense radius: the zigzag legs and the first look-back leg.
+var _leg_cells := PackedInt32Array()
+var _lookback_cells := PackedInt32Array()
 ## Perception blocks: corpse counts live in the corpse table; this is the static water mask.
 var _block := 1
 var _blocks_w := 1
@@ -268,6 +283,12 @@ func setup(p_world: RefCounted, p_subs: RefCounted, p_flora: RefCounted, p_items
 	_crowd_ref = maxf(1.0, params.get_int("entity.crowd_ref"))
 	_crowd_weight = params.get_float("entity.crowd_weight")
 	_search_hunger = params.get_float("entity.search_hunger")
+	_search_rest_hunger = params.get_float("entity.search_rest_hunger")
+	_leg_cells.resize(256)
+	_lookback_cells.resize(256)
+	for r in 256:
+		_leg_cells[r] = maxi(2, roundi(params.get_float("entity.search_leg_radii") * r))
+		_lookback_cells[r] = maxi(1, roundi(params.get_float("entity.search_lookback_radii") * r))
 	_block = params.get_int("entity.perception_block")
 	_workers = Parallel.resolve_workers(params.get_int("sim.worker_threads"))
 	_chunks = _workers * params.get_int("sim.chunks_per_worker")
@@ -330,6 +351,8 @@ func spawn(c: int, p_genome: PackedFloat32Array, p_sex: int) -> int:
 	action[i] = Action.NONE
 	target[i] = NO_CELL
 	heading[i] = NO_DIR
+	search_leg[i] = NO_LEG
+	search_from[i] = NO_CELL
 	progress[i] = 0
 	action_ticks[i] = 0
 	carry_ticks[i] = 0
@@ -457,13 +480,13 @@ func _derive(i: int) -> void:
 
 func _grow(new_capacity: int) -> void:
 	var old := capacity
-	for arr_name: String in ["alive", "sex", "action", "heading", "neighbors", "water_dist", "stuck",
+	for arr_name: String in ["alive", "sex", "action", "heading", "neighbors", "water_dist", "stuck", "search_leg",
 			"mem_head", "sense_r", "mem_cap"]:
 		var a: PackedByteArray = get(arr_name)
 		a.resize(new_capacity)
 		set(arr_name, a)
 	for arr_name: String in ["generation", "x", "y", "age", "energy", "hp", "carrying", "target", "avoid", "meals", "last_bite",
-			"progress", "action_ticks", "carry_ticks", "proposal", "max_energy", "sate_energy",
+			"progress", "action_ticks", "carry_ticks", "proposal", "search_from", "max_energy", "sate_energy",
 			"base_burn", "rest_burn", "sense_burn", "move_cost", "speed", "digest_q"]:
 		var a: PackedInt32Array = get(arr_name)
 		a.resize(new_capacity)
@@ -480,6 +503,8 @@ func _grow(new_capacity: int) -> void:
 		sex[i] = 0
 		action[i] = Action.NONE
 		heading[i] = NO_DIR
+		search_leg[i] = NO_LEG
+		search_from[i] = NO_CELL
 		neighbors[i] = 0
 		water_dist[i] = NONE_U8
 		stuck[i] = 0
@@ -544,7 +569,7 @@ func tick(tick_number: int) -> void:
 		return
 	for arr: StringName in [&"alive", &"action", &"target", &"heading", &"scores", &"neighbors",
 			&"water_dist", &"mem_kind", &"mem_cell", &"mem_tick", &"mem_head", &"energy", &"age", &"stuck", &"avoid",
-			&"progress", &"proposal", &"action_ticks", &"carry_ticks"]:
+			&"progress", &"proposal", &"action_ticks", &"carry_ticks", &"search_leg", &"search_from"]:
 		Parallel.ensure_unique(self, arr)
 
 	var t0 := Time.get_ticks_usec()
@@ -726,7 +751,9 @@ func decide_one(i: int) -> void:
 	neighbors[i] = mini(near, NONE_U8)
 	water_dist[i] = water_d
 
-	# Memory: remember the best food in sight; find the freshest remembered food elsewhere.
+	# Memory: remember the best food in sight; find the freshest (most recent) remembered food
+	# elsewhere. With no food in sight, a remembered cell that is in sight has nothing edible on it
+	# any more: forget it (a searcher that reaches the spot and finds nothing moves on).
 	var m0 := i * memory_slots
 	var cap: int = mem_cap[i]
 	if best_food != NO_CELL:
@@ -735,7 +762,14 @@ func decide_one(i: int) -> void:
 	var mem_fresh := 0.0
 	for m in cap:
 		var k := m0 + m
-		if mem_kind[k] != Mem.FOOD or mem_cell[k] == self_cell:
+		if mem_kind[k] != Mem.FOOD:
+			continue
+		var mc := mem_cell[k]
+		@warning_ignore("integer_division")
+		if best_food == NO_CELL and absi(mc % w - cx) <= r and absi(mc / w - cy) <= r:
+			mem_kind[k] = Mem.NONE
+			continue
+		if mc == self_cell:
 			continue
 		var age_ticks := _tick - mem_tick[k]
 		if age_ticks >= _mem_ticks:
@@ -777,12 +811,22 @@ func decide_one(i: int) -> void:
 	# fresh memory wins over wandering and a stale one loses to it.
 	if not food_known and mem_best != NO_CELL:
 		scores[s0 + Action.SEEK_FOOD] = w_forage * hunger * _mem_trust * mem_fresh
+	# With no food in sight, resting loses its appeal by entity.search_rest_hunger: a hungry entity
+	# goes back to remembered food before the memory goes stale, or starts searching while it still
+	# has the energy to, instead of resting until it is weak.
+	var rest_drive := 1.0 - hunger if food_known else maxf(0.0, 1.0 - hunger / _search_rest_hunger)
+	scores[s0 + Action.REST] = w_rest * rest_drive
 	# Crowding (entities in sight, relative to entity.crowd_ref) makes wandering away attractive,
-	# so sated entities spread out instead of clumping around food and blocking each other.
+	# so sated entities spread out instead of clumping and blocking each other; it fades with
+	# hunger. With food in sight it applies only to an entity that would rest rather than eat:
+	# crowding never takes an entity away from food it would eat, but the sated still leave
+	# feeding spots instead of boxing hungry entities in.
 	var crowd := minf(1.0, float(near) / _crowd_ref)
+	var crowd_pull := _crowd_weight * crowd * (1.0 - hunger)
+	if food_known and scores[s0 + Action.FORAGE] >= scores[s0 + Action.REST]:
+		crowd_pull = 0.0
 	scores[s0 + Action.WANDER] = w_explore * (_wander_base + (0.0 if food_known else _wander_hunger * hunger)) \
-			+ _crowd_weight * crowd
-	scores[s0 + Action.REST] = w_rest * (1.0 - hunger)
+			+ crowd_pull
 	if carried == 0 and best_corpse != NO_CELL:
 		scores[s0 + Action.PICK_UP] = w_carry * (1.0 - hunger)
 	if carried != 0:
@@ -799,6 +843,8 @@ func decide_one(i: int) -> void:
 		best = Action.REST
 	action[i] = best
 	action_ticks[i] = 0
+	if best != Action.WANDER:
+		search_leg[i] = NO_LEG
 	match best:
 		Action.FORAGE:
 			target[i] = best_food
@@ -810,15 +856,25 @@ func decide_one(i: int) -> void:
 			target[i] = best_corpse
 		Action.WANDER:
 			target[i] = NO_CELL
-			# Searching: hungry, no food in sight, and wandering won (so any remembered food was
-			# too stale to seek). A searcher keeps its heading, crowd or not; propose re-rolls it
-			# only when the way is blocked. Turning away from crowds is for the sated, who would
-			# otherwise clump; a stranded hungry group that kept turning from each other would
-			# oscillate in place instead of leaving.
+			# Searching: hungry, no food in sight, and wandering won (any remembered food was too
+			# stale to seek). Crowding does not turn a searcher (a stranded hungry group that kept
+			# turning from each other would oscillate in place instead of leaving):
+			#  - with a remembered food cell, even a stale one, head for the most recent first;
+			#  - otherwise sweep (propose runs the legs): look back a short leg, then zigzag in
+			#    diagonal legs along a cardinal axis, which keeps full speed away from where it
+			#    started while seeing a band about twice as wide as a straight line.
 			var searching := not food_known and hunger >= _search_hunger
-			if searching:
-				if heading[i] == NO_DIR:
-					heading[i] = Rng.hash3(_decide_seed32, _tick, i + capacity) & 7
+			if searching and mem_best != NO_CELL:
+				@warning_ignore("integer_division")
+				var my := mem_best / w
+				heading[i] = _dir_from_delta[(signi(my - cy) + 1) * 3 + signi(mem_best % w - cx) + 1]
+				search_leg[i] = NO_LEG
+			elif searching:
+				if search_leg[i] == NO_LEG:
+					var d0: int = heading[i] if heading[i] != NO_DIR else Rng.hash3(_decide_seed32, _tick, i + capacity) & 7
+					heading[i] = ((d0 & 6) + 4) & 7  # behind the cardinal axis nearest the current heading
+					search_leg[i] = 0
+					search_from[i] = self_cell
 			else:
 				var crowd_dx := _crowd_dx(cx, x0, x1, y0, y1) if crowd > 0.0 else 0
 				if crowd > 0.0 and (crowd_dx != 0 or crowd_dy != 0):
@@ -899,6 +955,8 @@ func _propose_chunk(c: int) -> void:
 	var act := action
 	var tgt := target
 	var hd := heading
+	var sleg := search_leg
+	var sfrom := search_from
 	var prog := progress
 	var prop := proposal
 	var en := energy
@@ -967,13 +1025,39 @@ func _propose_chunk(c: int) -> void:
 				act[i] = Action.NONE  # walled in: decide again next tick
 				continue
 		elif a == Action.WANDER:
+			var leg := sleg[i]
+			if leg != NO_LEG:
+				# Sweep: at the end of a leg (Chebyshev cells from where it began), turn to the next.
+				var from := sfrom[i]
+				@warning_ignore("integer_division")
+				var done := maxi(absi(cx - from % w), absi(cy - from / w))
+				var r_i: int = sense_r[i]
+				@warning_ignore("integer_division")
+				if done >= (_lookback_cells[r_i] if leg == 0 else (_leg_cells[r_i] + 1) / 2 if leg == 1 else _leg_cells[r_i]):
+					hd[i] = (hd[i] + LEG_TURN[leg]) & 7
+					leg = LEG_NEXT[leg]
+					sleg[i] = leg
+					sfrom[i] = cy * w + cx
 			hh = hd[i]
 			if hh == NO_DIR:
 				continue
 			var nx := cx + dir_x[hh]
 			var ny := cy + dir_y[hh]
-			if nx < 0 or ny < 0 or nx >= w or ny >= h or passable[sub[ny * w + nx]] == 0:
-				hd[i] = Rng.hash3(_decide_seed32, _tick, i + 2 * capacity) & 7
+			# Turn when the way ahead is water or the map edge, or after entity.stuck_ticks blocked
+			# by other entities (wanderers heading into each other's cells would otherwise wait
+			# forever: a 2x2 group sweeping diagonally can block itself completely).
+			if nx < 0 or ny < 0 or nx >= w or ny >= h or passable[sub[ny * w + nx]] == 0 or stuck[i] >= _stuck_limit:
+				stuck[i] = 0
+				if leg != NO_LEG:
+					# A sweep turns its axis 90 degrees (side from the hash) and starts zigzagging
+					# again from here.
+					var axis: int = (hh + LEG_AXIS[leg]) & 7
+					axis = (axis + (2 if (Rng.hash3(_decide_seed32, _tick, i + 2 * capacity) & 1) == 0 else 6)) & 7
+					hd[i] = (axis + 1) & 7
+					sleg[i] = 1
+					sfrom[i] = cy * w + cx
+				else:
+					hd[i] = Rng.hash3(_decide_seed32, _tick, i + 2 * capacity) & 7
 				continue
 		elif a == Action.DROP:
 			arrive.append(i)
@@ -1188,6 +1272,7 @@ func describe(i: int) -> Dictionary:
 		"target": [] if t == NO_CELL else [t % world.width, t / world.width],
 		"neighbors": neighbors[i], "water_dist": -1 if water_dist[i] == NONE_U8 else water_dist[i],
 		"meals": meals[i], "stuck": stuck[i],
+		"search": ["", "looking back", "sweeping", "sweeping", "sweeping"][search_leg[i] + 1 if search_leg[i] != NO_LEG else 0],
 		"genome": g, "memory": mem, "scores": sc,
 		"costs": {"base_burn": base_burn[i] / float(Units.MILLI), "rest_burn": rest_burn[i] / float(Units.MILLI),
 				"sense_burn": sense_burn[i] / float(Units.MILLI), "move_cost": move_cost[i] / float(Units.MILLI)},
@@ -1197,10 +1282,10 @@ func describe(i: int) -> Dictionary:
 func hash_into(h: RefCounted) -> void:
 	h.add_int(capacity)
 	h.add_int(count)
-	for arr: PackedByteArray in [alive, sex, action, heading, neighbors, water_dist, mem_kind, mem_head, stuck]:
+	for arr: PackedByteArray in [alive, sex, action, heading, neighbors, water_dist, mem_kind, mem_head, stuck, search_leg]:
 		h.add_bytes(arr)
 	for arr: PackedInt32Array in [generation, x, y, age, energy, hp, carrying, target, avoid, meals, last_bite, progress,
-			action_ticks, carry_ticks, mem_cell, mem_tick, _free]:
+			action_ticks, carry_ticks, mem_cell, mem_tick, _free, search_from]:
 		h.add_i32(arr)
 	for arr: PackedInt32Array in [base_burn, rest_burn, sense_burn, move_cost]:
 		h.add_i32(arr)
@@ -1255,6 +1340,8 @@ func export_blocks() -> Dictionary:
 	out["entity.energy_eaten"] = energy_eaten.to_byte_array()
 	out["entity.meals_by_item"] = meals_by_item.to_byte_array()
 	out["entity.deaths_by_cause"] = deaths_by_cause.to_byte_array()
+	out["entity.search_leg"] = search_leg
+	out["entity.search_from"] = search_from.to_byte_array()
 	return out
 
 
@@ -1284,5 +1371,20 @@ func import_blocks(blocks: Dictionary, hdr: Dictionary) -> bool:
 	energy_eaten = (blocks.get("entity.energy_eaten", PackedByteArray()) as PackedByteArray).to_int64_array()
 	meals_by_item = (blocks.get("entity.meals_by_item", PackedByteArray()) as PackedByteArray).to_int64_array()
 	deaths_by_cause = (blocks.get("entity.deaths_by_cause", PackedByteArray()) as PackedByteArray).to_int64_array()
+	# Version 3 saves have no sweep state (added in version 4): nobody is mid-sweep after loading one.
+	# Per-item counts missing from any save start at 0.
+	search_leg = blocks.get("entity.search_leg", PackedByteArray())
+	search_from = (blocks.get("entity.search_from", PackedByteArray()) as PackedByteArray).to_int32_array()
+	if search_leg.size() != capacity or search_from.size() != capacity:
+		search_leg.resize(capacity)
+		search_leg.fill(NO_LEG)
+		search_from.resize(capacity)
+		search_from.fill(NO_CELL)
+	if energy_eaten.size() != items.count():
+		energy_eaten.resize(items.count())
+		energy_eaten.fill(0)
+	if meals_by_item.size() != items.count():
+		meals_by_item.resize(items.count())
+		meals_by_item.fill(0)
 	return alive.size() == capacity and x.size() == capacity and genome.size() == capacity * gene_count \
 			and mem_cell.size() == capacity * memory_slots

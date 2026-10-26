@@ -1,15 +1,15 @@
 Godot Engine v4.6.1.stable.official.14d19694e - https://godotengine.org
 
-threads=1  ticks=7680 (Year 2, Spring day 1, 00:00)  302.1 s  plants=208  entities=59 (of 5972 spawned)
-  world hash f49bec5ac8c50e7d5857f7814a67fd5208a58f1e49ab42d5b31d4e6705b591d1
-  entity hash 5a8259e7063cade0e818d7f4c172a3d656ee50d61ba32872ab2850d8effa0411
-  full hash  56cf701c9b5804866a7b156dd4bf5bef1143b8dea922862bd3c88399ff6fb92b
-threads=3  ticks=7680 (Year 2, Spring day 1, 00:00)  59.1 s  plants=208  entities=59 (of 5972 spawned)
-  world hash f49bec5ac8c50e7d5857f7814a67fd5208a58f1e49ab42d5b31d4e6705b591d1
-  entity hash 5a8259e7063cade0e818d7f4c172a3d656ee50d61ba32872ab2850d8effa0411
-  full hash  56cf701c9b5804866a7b156dd4bf5bef1143b8dea922862bd3c88399ff6fb92b
-threads=8  ticks=7680 (Year 2, Spring day 1, 00:00)  38.7 s  plants=208  entities=59 (of 5972 spawned)
-  world hash f49bec5ac8c50e7d5857f7814a67fd5208a58f1e49ab42d5b31d4e6705b591d1
-  entity hash 5a8259e7063cade0e818d7f4c172a3d656ee50d61ba32872ab2850d8effa0411
-  full hash  56cf701c9b5804866a7b156dd4bf5bef1143b8dea922862bd3c88399ff6fb92b
+threads=1  ticks=7680 (Year 2, Spring day 1, 00:00)  135.0 s  plants=18  entities=3 (of 5972 spawned)
+  world hash d731d4a371d022c64c1a0ee1c7621831b828f226d814990685b3a4838cf762f9
+  entity hash 46429ace2a0c9d168fb3e721ce957025d601a01f876aa58cd818d353be1381a2
+  full hash  4ca5aa0a2be1836a66e3ece6156e04f18dd2fa889dc7d8580d6503855854dad8
+threads=3  ticks=7680 (Year 2, Spring day 1, 00:00)  50.9 s  plants=18  entities=3 (of 5972 spawned)
+  world hash d731d4a371d022c64c1a0ee1c7621831b828f226d814990685b3a4838cf762f9
+  entity hash 46429ace2a0c9d168fb3e721ce957025d601a01f876aa58cd818d353be1381a2
+  full hash  4ca5aa0a2be1836a66e3ece6156e04f18dd2fa889dc7d8580d6503855854dad8
+threads=8  ticks=7680 (Year 2, Spring day 1, 00:00)  32.4 s  plants=18  entities=3 (of 5972 spawned)
+  world hash d731d4a371d022c64c1a0ee1c7621831b828f226d814990685b3a4838cf762f9
+  entity hash 46429ace2a0c9d168fb3e721ce957025d601a01f876aa58cd818d353be1381a2
+  full hash  4ca5aa0a2be1836a66e3ece6156e04f18dd2fa889dc7d8580d6503855854dad8
 RESULT: PASS (full hashes identical)

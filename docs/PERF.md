@@ -249,7 +249,32 @@ flora on, 200 measured ticks at steady state. Differences:
 About 1 to 2% of each population starved during warmup (founders placed on poor land). The
 tables show the count alive while measuring.
 
-### Final: ms per tick (after the follow-up fixes, summer)
+### Current: ms per tick after the search fixes (second Phase 3 commit, summer)
+
+Search fixes S1-S3 (S1 as adopted: with food in sight, crowding only moves an entity that would
+rest rather than eat), directed search and sweep, rest with no food in sight, save format v4.
+These are on top of the commit-b395890 rows below. Same method and season. Sources:
+`perf_p3_search.json`, `perf_p3_search_hungry.json`, `perf_p3_search_lowflora.json`.
+
+| population | entities | mean ms | p50 | p95 | max | ticks/s | env | decide | propose | resolve | deaths | interact | corpses | decisions/tick | moves/tick | blocked/tick | deaths in 200 ticks |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| default | 9,978 | 15.06 | 15.00 | 15.90 | 17.52 | 66.4 | 9.53 | 4.15 | 0.64 | 0.55 | 0.00 | 0.14 | 0.00 | 1,012 | 44 | 1 | 1 |
+| default | 49,701 | 34.53 | 33.96 | 37.86 | 39.94 | 29.0 | 9.60 | 19.24 | 2.72 | 2.23 | 0.01 | 0.68 | 0.02 | 5,042 | 250 | 5 | 5 |
+| default | 99,378 | **57.62** | 56.23 | 63.41 | 75.82 | **17.4** | 9.14 | 37.51 | 5.23 | 4.38 | 0.01 | 1.26 | 0.04 | 10,080 | 564 | 10 | 6 |
+| hungry: `entity.burn_floor` 0.76 | 98,874 | 62.47 | 61.70 | 66.92 | 70.38 | 16.0 | 9.72 | 39.04 | 6.47 | 4.63 | 0.01 | 2.51 | 0.04 | 10,115 | 831 | 15 | 8 |
+| hungry and mobile: flora thinned to 10% | 95,891 | **64.25** | 62.92 | 73.10 | 81.62 | **15.6** | 6.29 | 40.46 | 7.39 | 6.76 | 0.03 | 2.84 | 0.44 | 9,783 | 5,235 | 31 | 609 |
+
+Decide against the commit-b395890 rows below (same season): 10k +2.7%, 50k +4.7%, 100k +2.3%,
+hungry +0.4%, low flora +4.7%. **No decide regression above 10%.** Every 100k row is at least
+10 ticks/s, so **stay on GDScript** (worst 15.6, a 1.56× margin).
+
+**Blocking stays low with the adopted S1.** The first S1 dropped the crowd term for every entity
+with food in sight. Its rows had 115 / 289 / 439 blocked moves per tick (default / hungry /
+low flora) and 119 deaths in 200 ticks in the hungry row. Sated entities no longer left food
+and boxed hungry ones in. With the adopted rule these are 10 / 15 / 31 blocked moves and 8
+deaths.
+
+### After the follow-up fixes (commit b395890, summer)
 
 Behaviour fixes A and B, the death check after every cost, and derived energy costs. Sources:
 `perf_p3_fixed.json`, `perf_p3_hungry.json`, `perf_p3_lowflora.json`.
@@ -328,7 +353,7 @@ pre-optimisation run's alive counts, moves, blocked moves and deaths exactly.
 The phase doc asks for the options when the result lands at 5 to 10. It landed there before the
 optimisation, so here they are:
 
-1. **Stay on GDScript (recommended).** 16.1 to 17.5 ticks/s at 100k.
+1. **Stay on GDScript (recommended).** 15.6 to 17.4 ticks/s at 100k after the search fixes (16.1 to 17.5 before them).
 2. **More GDScript levers if later phases use the margin up:**
    - `entity.decision_interval` (10 → 20 roughly halves decide).
    - A cheap re-decision for sated, resting entities.
@@ -400,9 +425,9 @@ blocks that have any.
 ### Reproduce (Phase 3)
 
 ```bash
-tools/godot.sh --headless --path . --script res://tools/profile.gd -- --env-warmup=38400 --counts=10000,50000,100000 --warmup=2000 --ticks=200 --season=summer --out=res://batch_output/perf_p3_fixed.json
-tools/godot.sh --headless --path . --script res://tools/profile.gd -- --env-warmup=38400 --counts=100000 --warmup=2000 --ticks=200 --season=summer --set=entity.burn_floor=0.76 --out=res://batch_output/perf_p3_hungry.json
-tools/godot.sh --headless --path . --script res://tools/profile.gd -- --env-warmup=38400 --counts=100000 --warmup=2000 --ticks=200 --season=summer --thin-flora=0.1 --out=res://batch_output/perf_p3_lowflora.json
+tools/godot.sh --headless --path . --script res://tools/profile.gd -- --env-warmup=38400 --counts=10000,50000,100000 --warmup=2000 --ticks=200 --season=summer --out=res://batch_output/perf_p3_search.json
+tools/godot.sh --headless --path . --script res://tools/profile.gd -- --env-warmup=38400 --counts=100000 --warmup=2000 --ticks=200 --season=summer --set=entity.burn_floor=0.76 --out=res://batch_output/perf_p3_search_hungry.json
+tools/godot.sh --headless --path . --script res://tools/profile.gd -- --env-warmup=38400 --counts=100000 --warmup=2000 --ticks=200 --season=summer --thin-flora=0.1 --out=res://batch_output/perf_p3_search_lowflora.json
 tools/godot.sh --headless --path . --script res://tools/decide_bench.gd -- --rebuild --ticks=200
 tools/godot.sh --headless --path . --script res://tools/perception_bench.gd
 ```
