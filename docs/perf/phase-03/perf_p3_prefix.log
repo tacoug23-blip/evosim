@@ -1,0 +1,14 @@
+Godot Engine v4.6.1.stable.official.14d19694e - https://godotengine.org
+
+world 4096x4096 generated in 6.1 s
+cpu: Intel(R) Core(TM) i7-9700K CPU @ 3.60GHz, 8 logical cores, 4.6.1-stable (official)
+environment warmup: 38400 ticks (Year 6, Spring day 1, 00:00) in 322 s; 5490751 plants
+decision interval 10, entity warmup 2000, measured 200 ticks, founder groups of 250
+
+| entities | mean ms | p50 ms | p95 ms | max ms | tps (mean) | env | decide | propose | deaths | resolve | interact | corpses | decisions/tick | moves/tick | blocked/tick | deaths |
+|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| 9910 | 14.69 | 14.58 | 15.25 | 16.23 | 68.1 | 9.29 | 4.00 | 0.64 | 0.00 | 0.56 | 0.15 | 0.01 | 1005 | 73 | 1 | 2 |
+| 49092 | 31.30 | 30.93 | 34.08 | 36.39 | 31.9 | 9.50 | 15.97 | 2.84 | 0.00 | 2.24 | 0.62 | 0.08 | 4981 | 294 | 5 | 20 |
+| 97997 | 57.80 | 56.78 | 62.72 | 68.27 | 17.3 | 7.21 | 34.86 | 6.16 | 0.01 | 5.06 | 4.26 | 0.20 | 9979 | 1804 | 11 | 46 |
+
+wrote C:/Users/tacou/evosim/batch_output/perf_p3.json

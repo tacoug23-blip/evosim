@@ -1,0 +1,8 @@
+Godot Engine v4.6.1.stable.official.14d19694e - https://godotengine.org
+
+perception bench: radius 5 (121 cells), bucket 16, 10000 sampled decisions, decisions/tick = entities / 10
+| entities | grid_all us/decision | grid_flora+occ us/decision | grid_flora us/decision | entity part on grid us | occ_rows us/decision | hash_build ms/tick | hash_query us/decision | entity part with hash us/decision | grid entity ms/tick | hash entity ms/tick |
+|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| 10000 | 23.59 | 16.73 | 10.97 | 5.77 | 2.63 | 4.89 | 4.61 | 9.50 | 5.77 | 9.50 |
+| 50000 | 23.70 | 15.84 | 10.77 | 5.07 | 2.61 | 13.70 | 4.39 | 7.13 | 25.37 | 35.65 |
+| 100000 | 23.91 | 15.87 | 10.81 | 5.06 | 2.49 | 25.05 | 4.40 | 6.90 | 50.59 | 69.04 |

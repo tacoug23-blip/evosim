@@ -1,0 +1,11 @@
+Godot Engine v4.6.1.stable.official.14d19694e - https://godotengine.org
+
+environment warmup to Year 6, Spring day 1, 00:00 in 327 s
+entity warmup in 207 s, 97981 entities
+saved state to C:/Users/tacou/AppData/Roaming/Godot/app_userdata/EvoSim/decide_bench.evosave
+state: Year 6, Summer day 1, 20:00, 97981 entities
+decide_one: first pass 32.40 us, best 31.98 us per decision (single thread)
+chosen: forage 1062, seek food 19, wander 1563, rest 95337
+output hash 2e597e00a2d69a17ca3c17d604321622fdb51899c7579e1635529e7c6dd598c2
+# then, with the pre-optimisation entity_system.gd swapped back in: decide_bench --repeats=0 --ticks=200 on the same saved state
+200 ticks: 93.93 ms/tick (10.6 ticks/s); env 9.26, decide 73.05, propose 5.44, deaths 0.01, resolve 4.52, interact 1.41, corpses 0.20 ms

@@ -1,9 +1,9 @@
-## Top bar: speed controls, save/load, spike spawner, overlay and shading toggles, debug brush,
+## Top bar: speed controls, save/load, founder spawner, overlay and shading toggles, entity
+## colouring, debug brush,
 ## live stats with the in-game clock, and the cell under the cursor. Talks to main.gd; reads
 ## sim state only through the runner (stats, probes), never directly.
 extends CanvasLayer
 
-const SPIKE_CHOICES := [0, 1000, 10000, 50000, 100000]
 const MAX_BRUSH_RADIUS := 64
 
 var _main: Node
@@ -12,7 +12,7 @@ var _stats: Label
 var _cell: Label
 var _overlay_row: HBoxContainer
 var _speed_buttons := {}
-var _spike_choice: OptionButton
+var _color_choice: OptionButton
 var _brush_choice: OptionButton
 var _brush_radius: SpinBox
 var _refresh_interval := 0.25
@@ -47,12 +47,15 @@ func _ready() -> void:
 	_add_button(row, "Save", func() -> void: _main.quick_save())
 	_add_button(row, "Load", func() -> void: _main.quick_load())
 	row.add_child(VSeparator.new())
-	_add_label(row, "Spike:")
-	_spike_choice = OptionButton.new()
-	for n: int in SPIKE_CHOICES:
-		_spike_choice.add_item(str(n) if n > 0 else "none")
-	row.add_child(_spike_choice)
-	_add_button(row, "Spawn", func() -> void: _main.respawn_spike(SPIKE_CHOICES[_spike_choice.selected]))
+	_add_label(row, "Founders:")
+	_add_button(row, "Spawn", func() -> void: _main.spawn_founders())
+	_add_button(row, "Clear", func() -> void: _main.clear_entities())
+	_add_label(row, "Colour:")
+	_color_choice = OptionButton.new()
+	_color_choice.add_item("energy")
+	_color_choice.add_item("sex")
+	_color_choice.item_selected.connect(func(i: int) -> void: _main.view.entity_overlay.set_color_mode(i))
+	row.add_child(_color_choice)
 	row.add_child(VSeparator.new())
 	_add_label(row, "Brush:")
 	_brush_choice = OptionButton.new()
@@ -99,8 +102,7 @@ func bind(main: Node) -> void:
 			func(on: bool) -> void: main.view.flora_overlay.set_season_tint(on))
 	_add_toggle(_overlay_row, "Day/night", main.view.daynight_enabled,
 			func(on: bool) -> void: main.view.daynight_enabled = on)
-	var n: int = main.core.spike_count()
-	_spike_choice.select(maxi(0, SPIKE_CHOICES.find(n)))
+	_color_choice.select(int(main.view.entity_overlay.color_mode))
 	_bind_brush(main)
 	_last_time_usec = Time.get_ticks_usec()
 
@@ -129,6 +131,12 @@ func _bind_brush(main: Node) -> void:
 func show_speed(multiplier: float) -> void:
 	if _speed_buttons.has(multiplier):
 		(_speed_buttons[multiplier] as Button).button_pressed = true
+
+
+## Pick an entity colour mode as if chosen in the Colour menu (autotests).
+func choose_color_mode(i: int) -> void:
+	_color_choice.select(i)
+	_color_choice.item_selected.emit(i)
 
 
 func _add_overlay_toggle(o: Node2D) -> void:
@@ -175,10 +183,10 @@ func _process(delta: float) -> void:
 	var speed: float = s["speed"]
 	var speed_text := "paused" if speed == 0.0 else ("max" if speed < 0.0 else "%dx" % int(speed))
 	var time: RefCounted = _main.core.time
-	_stats.text = "%s   tick %d   %s   %.1f ticks/s   tick %.1f ms   render %d fps   zoom %.2f px/cell   %dx%d   %d spike entities" % [
+	_stats.text = "%s   tick %d   %s   %.1f ticks/s   tick %.1f ms   render %d fps   zoom %.2f px/cell   %dx%d   %d entities   %d corpses" % [
 			time.describe(s["tick"]), s["tick"], speed_text, _tps, s["tick_ms_ema"],
 			Engine.get_frames_per_second(), _main.view.camera.zoom.x, _main.core.world.width,
-			_main.core.world.height, _main.core.spike_count()]
+			_main.core.world.height, s["entities"], s["corpses"]]
 	if _probe_cell >= 0:
 		_main.runner.request_probe(_probe_cell)  # refresh values under a still cursor
 

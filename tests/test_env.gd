@@ -120,7 +120,7 @@ func test_harvest_api() -> void:
 	check_eq(got["removed"], 30, "removed the requested amount")
 	check_eq(got["qty"], roundi(30 * summer_yield), "yield scales with the summer seasonal_yield")
 	check_eq(got["name"], "berries", "harvest item")
-	check_eq(got["nutrition"], got["qty"] * core.flora.nutrition[berry], "nutrition per item")
+	check_eq(got["nutrition"], got["qty"] * core.items.nutrition[core.flora.harvest_item[berry]], "nutrition per item, from items.json")
 	check_eq(core.world.flora_biomass[c], 70, "biomass reduced")
 	check_eq(core.world.fertility[c], maxi(0, fert_before - roundi(30 * drain)), "fertility drained per biomass removed")
 

@@ -1,0 +1,15 @@
+# Checkpoint 1: after behaviour fixes A, B, death check, genes text (13 genes)
+founders.gene_jitter = 0.0
+entities 59 alive (of 5972 spawned), 5913 deaths, 210 corpses
+world hash     f49bec5ac8c50e7d5857f7814a67fd5208a58f1e49ab42d5b31d4e6705b591d1
+entity hash    a5300221c20be65b8ea36fa8aa46b0a2f9920a9047cffe3d45f14c89f065c400
+full hash      0ebadc890d7cb17b8e28d3cb6c0fa3b152e62dd40ed7f3bf23964a7ad196f968
+behaviour hash 3089225aaa78f01c2b0faeab0ae579210165923214aca0e78975cf8a41cb41dd  (world, corpses, all entity state except the genome bytes)
+
+# Checkpoint 2: after derived energy costs (11 genes). World and behaviour hashes equal checkpoint 1; entity/full hashes differ because they hash the genome bytes (13 -> 11 floats per entity) and now the derived cost arrays.
+founders.gene_jitter = 0.0
+entities 59 alive (of 5972 spawned), 5913 deaths, 210 corpses
+world hash     f49bec5ac8c50e7d5857f7814a67fd5208a58f1e49ab42d5b31d4e6705b591d1
+entity hash    5a8259e7063cade0e818d7f4c172a3d656ee50d61ba32872ab2850d8effa0411
+full hash      56cf701c9b5804866a7b156dd4bf5bef1143b8dea922862bd3c88399ff6fb92b
+behaviour hash 3089225aaa78f01c2b0faeab0ae579210165923214aca0e78975cf8a41cb41dd  (world, corpses, all entity state except the genome bytes)

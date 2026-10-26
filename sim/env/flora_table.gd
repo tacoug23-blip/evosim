@@ -11,7 +11,7 @@ const MAX_TYPES := 31
 const REQUIRED_FIELDS := ["id", "name", "color", "substrate_mask", "growth_rate", "max_biomass",
 		"maturity", "seed_spread_radius", "seed_chance", "mortality", "seasonal_growth",
 		"seasonal_yield", "day_growth", "night_growth", "moisture_need", "fertility_consumption",
-		"harvest_item", "nutrition", "initial_cover"]
+		"harvest_item", "initial_cover"]
 
 var names := PackedStringArray([""])
 var colors := PackedColorArray([Color.TRANSPARENT])
@@ -28,7 +28,6 @@ var night_growth := PackedFloat64Array([0.0])
 var moisture_need := PackedFloat64Array([0.0])
 var fertility_consumption := PackedFloat64Array([0.0])
 var harvest_item := PackedInt32Array([0])
-var nutrition := PackedInt32Array([0])
 var initial_cover := PackedFloat64Array([0.0])
 ## 1 if type t may grow on substrate s: [t * 256 + s]. Both the flora's substrate_mask and the
 ## substrate's allows_flora bit (t - 1) must allow it.
@@ -117,7 +116,6 @@ func _add(e: Dictionary, id: int, subs: RefCounted, items: RefCounted) -> bool:
 	moisture_need.append(e["moisture_need"])
 	fertility_consumption.append(e["fertility_consumption"])
 	harvest_item.append(item)
-	nutrition.append(int(e["nutrition"]))
 	initial_cover.append(e["initial_cover"])
 	return true
 

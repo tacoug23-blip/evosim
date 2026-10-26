@@ -1,12 +1,12 @@
 {
-	"version": 1,
-	"note": "Item ids are the u8 values in the item_type layer; 0 = none, keep ids contiguous from 1. Phase 2 defines only harvest products; materials and cooked food arrive in later phases.",
+	"version": 2,
+	"note": "Item ids are the u8 values in the item_type layer; 0 = none, keep ids contiguous from 1 and never renumber existing ids. Every item is edible: nutrition (energy per item eaten, before digest_efficiency) must be > 0. Food value differs only through nutrition. Corpse nutrition is a separate registry value (corpse.nutrition_per_mass).",
 	"items": [
-		{ "id": 1, "name": "hay", "desc": "Cut grass." },
-		{ "id": 2, "name": "twigs", "desc": "Shrub cuttings." },
-		{ "id": 3, "name": "berries", "desc": "Berry bush fruit." },
-		{ "id": 4, "name": "wood", "desc": "Tree wood." },
-		{ "id": 5, "name": "reeds", "desc": "Cut reeds." },
-		{ "id": 6, "name": "mushrooms", "desc": "Fungus fruiting bodies." }
+		{ "id": 1, "name": "hay", "desc": "Cut grass.", "nutrition": 6.0, "tuned": false },
+		{ "id": 2, "name": "twigs", "desc": "Shrub cuttings.", "nutrition": 2.0, "tuned": false },
+		{ "id": 3, "name": "berries", "desc": "Berry bush fruit.", "nutrition": 40.0, "tuned": false },
+		{ "id": 4, "name": "wood", "desc": "Tree wood.", "nutrition": 1.0, "tuned": false },
+		{ "id": 5, "name": "reeds", "desc": "Cut reeds.", "nutrition": 10.0, "tuned": false },
+		{ "id": 6, "name": "mushrooms", "desc": "Fungus fruiting bodies.", "nutrition": 25.0, "tuned": false }
 	]
 }

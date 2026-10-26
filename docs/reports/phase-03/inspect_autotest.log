@@ -1,0 +1,6 @@
+INSPECT_TEST PASS clicked (812, 531): entity 1 gen 0, action rest, decided rest, top score rest 0.392, energy 702/1000, 3 neighbours, costs base 0.600 rest 0.360 sense 0.100 move 0.400
+INSPECT_SEXES 1550 female of 3094
+screenshot C:/Users/tacou/evosim/batch_output/inspect_energy.png
+screenshot C:/Users/tacou/evosim/batch_output/inspect_sex.png
+INSPECT_FOLLOW PASS: age 275 -> 481 ticks, now rest at (812, 531)
+FOUNDERS_TEST PASS: 3094 entities -> clear -> 0 -> spawn -> 2815

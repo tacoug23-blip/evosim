@@ -546,15 +546,33 @@ func seed_initial(rngs: RefCounted) -> void:
 ## the current season; fertility is drained per biomass removed; a plant harvested to zero
 ## dies. Returns {item, name, qty, nutrition, removed, type}.
 func harvest(cell: int, amount: int) -> Dictionary:
+	var t: int = world.flora_type[cell]
+	var removed := harvest_removed(cell, amount)
+	if removed == 0:
+		return {"item": 0, "name": "", "qty": 0, "nutrition": 0.0, "removed": 0, "type": 0}
+	var qty := yield_qty(t, removed)
+	var item: int = flora.harvest_item[t]
+	return {"item": item, "name": items.names[item], "qty": qty,
+			"nutrition": qty * items.nutrition[item], "removed": removed, "type": t}
+
+
+## Item quantity that `removed` biomass of type t yields this season.
+func yield_qty(t: int, removed: int) -> int:
+	return roundi(removed * flora.seasonal_yield[t * SEASONS + _season])
+
+
+## harvest() without building a Dictionary, for callers in hot loops (entities eating).
+## Same effects; returns the biomass removed. Read the flora type before calling, and get
+## the item quantity from yield_qty().
+func harvest_removed(cell: int, amount: int) -> int:
 	var ft: PackedByteArray = world.flora_type
 	var fb: PackedByteArray = world.flora_biomass
 	var t := ft[cell]
 	if t == 0 or amount <= 0:
-		return {"item": 0, "name": "", "qty": 0, "nutrition": 0, "removed": 0, "type": 0}
+		return 0
 	var bio := fb[cell]
 	var removed := mini(amount, bio)
 	var nb := bio - removed
-	var qty := roundi(removed * flora.seasonal_yield[t * SEASONS + _season])
 	var fe: PackedByteArray = world.fertility
 	fe[cell] = maxi(0, fe[cell] - ((removed * _drain_q + Q / 2) >> Q_SHIFT))
 	period_harvested[t] += removed
@@ -564,8 +582,7 @@ func harvest(cell: int, amount: int) -> Dictionary:
 		coverage[t] -= 1
 		period_deaths[t] += 1
 	fb[cell] = nb
-	return {"item": flora.harvest_item[t], "name": _item_name(t), "qty": qty,
-			"nutrition": qty * flora.nutrition[t], "removed": removed, "type": t}
+	return removed
 
 
 ## Put a plant of `type` with `bio` biomass on an empty cell. Respects substrate rules unless
@@ -670,9 +687,6 @@ func current_season() -> int:
 func type_count() -> int:
 	return _types
 
-
-func _item_name(t: int) -> String:
-	return items.names[flora.harvest_item[t]]
 
 
 static func _zeros64(n: int) -> PackedInt64Array:

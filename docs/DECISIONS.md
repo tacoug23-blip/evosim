@@ -271,3 +271,297 @@ Non-obvious choices and why. Newest phase at the bottom. If a decision here conf
   and SVG), `tools/harvest_experiment.gd` (fertility under harvest versus a control region),
   `tools/svg_chart.gd` (no plotting libraries on the dev machine), and `tools/thread_hash_check.gd`
   (runs the same seed at several thread counts and prints the hashes).
+
+## Phase 3
+
+### Entities replace the spike
+
+- **The Phase 1 performance spike is gone.** Its doc said Phase 3 would replace it. Real entities
+  reuse its one-per-cell resolve (rotating seeded start, no swaps, sidesteps), and its conflict tests
+  are ported to `tests/test_movement.gd`.
+- **Save format version 3** adds entity and corpse blocks. Versions 1 and 2 still load (no
+  entities). Their spike blocks are skipped, and their occupancy layer, which may hold spike ids, is
+  cleared.
+
+### Entity store
+
+- **SoA with slot recycling.** Entity id = slot + 1 (what `world.occupancy` stores). A dead slot goes
+  on a free list and is reused lowest-first with `generation + 1`, so `(slot, generation)` names one
+  entity over time; the inspector selects by it.
+- **resize() does not zero memory**, so every per-slot array gets defined values when capacity
+  grows. An uninitialised `proposal` in an empty slot was being "applied" at (-1, -1), writing to
+  occupancy through a negative (wrapping) index; this is caught by the 10,000-tick invariant test.
+- **Genome-shaped stats.** One float per gene from `config/genes.json` (name, group, min, max,
+  default, desc, cost), 11 genes, stored entity-major in one flat array. Integer stats are derived
+  from the genome at spawn, in thousandths: max/sate energy, the energy costs (base burn, rest burn,
+  sense burn, move cost; spec §4.1.1, see "Derived energy costs" below), speed, sense radius,
+  memory capacity. The genome is the source of truth: Phase 4 sets a genome and re-derives.
+- **Founders get the defaults** plus optional uniform jitter (`founders.gene_jitter`, default 0).
+  **Their starting energy is staggered**, uniform in [`founders.energy_min`, 1] × max, so the whole
+  population does not get hungry on the same tick.
+
+### Items own nutrition
+
+- **`nutrition` moved from `flora.json` to `items.json`.** No code path reads nutrition from flora:
+  `FloraTable` has no such field, and a test checks it.
+- **Every item is edible; food value is `nutrition`.** Placeholders, ranked: berries 40,
+  mushrooms 25, reeds 10, hay 6, twigs 2, wood 1.
+- **Eating:** a bite harvests `entity.bite_biomass` through `env.harvest_removed()`, then
+  `env.yield_qty()` turns the biomass removed into items (seasonal yield). The gain is exactly
+  items × nutrition × the `digest_efficiency` gene (the float gene value, not a fixed-point copy;
+  tested per item).
+- **Corpse nutrition is a registry value** (`corpse.nutrition_per_mass`).
+- **`harvest_removed()`/`yield_qty()` are a Dictionary-free fast path** for entities.
+  `harvest()` (Phase 2 API) is built on them.
+
+### Perception
+
+- **Spatial structure, chosen by profiling** (`tools/perception_bench.gd`, single-threaded, 4096²
+  map, radius 5):
+
+  | per decision at 100k entities | µs |
+  |---|---:|
+  | entities via the grid, occupancy read per cell | 5.1 |
+  | entities via the grid, native row counts (`slice` + `count`) | 2.5 |
+  | entities via a 16×16-bucket spatial hash (rebuilt per tick + query) | 6.9 |
+  | corpse + water reads per cell | about 8 |
+
+  **Entities: grid, by native row counts.** It is cheaper even before threading, and it
+  parallelises, while the hash rebuild (25 ms per tick at 100k) is sequential.
+- **Corpses and water: 8×8 perception blocks** (`entity.perception_block`). The corpse table keeps
+  lying-corpse counts per block (updated on create, pick-up, drop, and removal; checked by its
+  invariants). Water is a static block mask built at setup with native `find()`. Perception reads
+  corpse_id and substrate only inside blocks that have any. That cuts about a third of the scan
+  cost (23.9 to 15.9 µs per decision in the bench).
+- **The scan finds** the best food (by expected rate), the entities in sight (count + centroid), the
+  nearest lying corpse, and the nearest water. Water is perceived and recorded (`water_dist`, shown
+  in the inspector) but nothing acts on it yet: there is no drink action in Phase 3's list.
+- **Decide caches references to the world layers** it reads (`_ft`, `_occ`, …). Going through
+  `world.<layer>` costs a dynamic lookup per access. Layers are only replaced on load, which rebuilds
+  the entity system.
+- **Optimised after the first perf gate (9.9 ticks/s at 100k)**, with the decisions unchanged
+  (`tools/decide_bench.gd` hashes everything decide writes, before and after). Decide went from
+  32.0 to 18.0 µs per decision, and 100k from 9.9 to 17.3 ticks/s:
+  - Entities in sight are counted per row with native `slice()` + `count(0)`. The x half of the
+    crowd centroid is summed only when a crowded wander is chosen.
+  - The food scan goes outward from the entity's own row. Once no plant at a row's distance could
+    reach the best rate so far (even the season's richest type at a full bite), it stops; columns
+    are clipped the same way.
+  - Within a row, a plant type whose full bite cannot reach the best rate at the row's nearest
+    distance is skipped before its biomass is read.
+  - Ties go to the lowest cell index, which is what the row-major scan picked, so the chosen
+    plant is identical. The bounds only skip plants that cannot tie or win.
+
+### Decisions (utility)
+
+- **Hunger** h = (sate − energy) / sate, clamped to 0..1, where sate = `food_needed_to_sate` × max.
+- **Food choice weighs nutrition against time and energy.** The rate of a plant is
+  `min(biomass, bite) × seasonal_yield × nutrition / (distance × ticks_per_step + 1)`: energy per tick
+  of travelling and taking one bite. Utility uses quality q = rate / (rate + burn ×
+  `entity.food_rate_scale`), so low-value food scores low next to better food, and is still taken
+  when nothing better is in sight (tested both ways).
+- **Utilities** (genes in italics):
+  - forage = *forage* × h × q
+  - eat corpse = same shape, with corpse nutrition, only if `corpse.edible`
+  - seek remembered food = *forage* × h × `memory_trust` × freshness, only with no food in sight
+  - wander = *explore* × (`wander_base` + `wander_hunger` × h when no food is in sight) +
+    `crowd_weight` × crowding (a remembered food cell does not remove the hunger term: Flaw A below)
+  - rest = *rest* × (1 − h)
+  - pick up corpse = *carry_corpse* × (1 − h)
+  - drop = `drop_weight` × carried time + h
+
+  The argmax wins, ties going to the lower action index, and scores are stored per entity for the
+  inspector.
+- **Stagger:** an entity decides when `(tick + slot) % entity.decision_interval == 0`, or on the next
+  tick after its action ended (action NONE).
+
+### Crowds (found while testing survival)
+
+- **The first runs starved entities that had food 2-4 cells away.** Founder groups start dense, and
+  sated entities rest where they ate, so crowds block the food and every re-decision picks the same
+  blocked plant. Three fixes, each placeholder-tuned:
+  - Plants with another entity standing on them are not food candidates.
+  - After `entity.stuck_ticks` (6) blocked ticks the entity gives the target up (`avoid`) and heads
+    away from it.
+  - Crowding (entities in sight / `entity.crowd_ref`) adds to wander utility, and a crowded wanderer
+    heads away from the crowd's centroid.
+- **Effect** on a 256² test map with grown flora: deaths over 60 days went from 63 to 1 (of 271).
+- **At full size, 27% of 5,000 founders still starved in 20 days.** Every death was on rock or
+  sand patches (about 8 plants within 10 cells, versus about 230 around survivors). Founder groups
+  could be centred anywhere passable, and 16% of the map is rock. Two more fixes:
+  - **Group centres must be on habitable land**: fertility ≥ `founders.centre_min_fertility`. The
+    spec's "randomly placed with minimum spacing" still holds over that land.
+  - **A hungry entity with no food in sight or memory keeps its wander heading**
+    (`entity.search_hunger`), searching in a straight line instead of circling.
+  - Result: 99.3% survive 30 days, and every survivor has eaten 3+ meals.
+- **Two flaws remained (found by tracing the 39 deaths of a 60-day run), fixed before commit:**
+  - **Flaw A: a stale memory made hungry entities rest while starving.** Any remembered food
+    cell removed wander's hunger term, while seek (h × trust × freshness) lost to rest at most
+    hunger levels. An entity rested for days, with food just beyond sight, until its memory
+    expired after `entity.memory_days`; one went from 565 to 322 energy that way with 37 plants
+    within 10 cells. **Fix A:** wander always keeps its hunger term when no food is in sight; a
+    memory only adds the seek option. Seek beats wander while freshness > explore × (wander_base +
+    wander_hunger × h) / (forage × h × trust): 0.575 at hunger 0.67, 0.5 at hunger 1 (tested).
+  - **Flaw B: crowd avoidance overrode the hungry search.** A crowded wanderer turned away from
+    the crowd's centroid at every decision, so a hungry founder group stranded on bare rock
+    random-walked in place (a 225-entity cluster at founder density: slowest member 4 cells of
+    net displacement in 240 ticks, median 53). **Fix B:** a searching entity (hungry, no food in
+    sight, and wandering won, so any memory was too stale to seek) keeps its heading crowd or
+    not, and only non-searchers turn away from crowds. No new per-entity field: the heading is
+    already stored, and "searching" is recomputed at each decision. After the fix the slowest
+    member moves 115 cells (test: all ≥ 100 in 240 ticks).
+- **Open after the fixes: deaths rose from 39 to 58 of 5,000** in the 60-day abundant run (98.8%
+  survive; the bar is 95%). All 58 died on rock with no plant within 10 cells; 47 never ate.
+  Traced causes, all in the placeholder utility, not code faults:
+  - **The search is a straight line in a random direction that never turns back.** With sense
+    radius 5, food 6 cells behind the searcher is lost; searchers walked 130-145 cells across rock
+    and died. Fix B sends more entities on this search (crowded ones used to random-walk locally,
+    which sometimes found nearby food).
+  - **Memory freshness is wall-clock time** (`entity.memory_days`). Rest beats seek at low hunger
+    even with a fresh memory (0.34 vs 0.21 at hunger 0.32), so an entity rests until the memory
+    is past the seek/wander crossover (about 0.6 freshness, 2.4 days), then searches at random
+    instead of going back.
+  - **Crowding inflates wander even with food in sight** (wander 0.6-0.7 with 14 neighbours
+    against forage 0.39).
+  - Options, not applied (they change behaviour): a correlated random walk or a return toward
+    the last remembered food after some ticks of fruitless search; seek scored without the rest
+    trade-off once a memory exists, or a higher `entity.memory_trust`; crowd weight scaled by
+    (1 − hunger).
+
+### Movement
+
+- **Cost-weighted local step:** of the direct heading to the target and its two neighbours, take the
+  passable cell minimising remaining Chebyshev distance plus `entity.path_cost_weight` × terrain move
+  cost. No per-entity A*.
+- **Speed accumulator** as in the spike, capped at one step's cost, so blocked entities do not bank
+  moves. Carrying a corpse multiplies speed by `entity.carry_speed_factor`. Each cell moved costs
+  the derived `move_cost` × terrain cost, × `entity.carry_move_cost_factor` (1.5) while carrying.
+  The carry factor on energy is new in the follow-up: before it, carrying only slowed movement.
+- **The death check runs after every per-tick energy cost.** Propose charges burn (base, or rest
+  while resting) and sense burn; resolve charges each move; then the deaths phase kills every
+  entity at or below zero, in slot order, before interact. Before, the check ran between propose
+  and resolve, so a move could leave a living entity at negative energy for a tick, and it could
+  even eat its way back in interact. Tick order is now decide, propose, resolve, deaths, interact.
+  The invariant check rejects a living entity with energy ≤ 0.
+
+### Corpses
+
+- **Corpse table:** SoA plus the `corpse_id` layer, one corpse per cell; a new or dropped corpse on an
+  occupied cell merges into it. `owner_tribe` is stored and stays 0 until tribes.
+- **Decay:** every `corpse.update_interval` ticks a lying corpse releases a share of its soil
+  nutrients (mass × `corpse.soil_nutrients_per_mass`), evenly over the land cells within
+  `corpse.spread_radius`, until `corpse.decay_days` pass, when it is removed.
+  - Fertility near corpses rises; Phase 2's regeneration then slowly pulls it back toward the
+    natural level.
+  - Carried corpses do not decay.
+- **Eating corpses** is off by default (`corpse.edible`, a spec open item).
+- **A death on a cell that already holds a corpse merges into it:** the new body's mass and soil
+  nutrients are added to that corpse and its decay timer restarts, so nothing is lost. Corpses do
+  not block movement, so a starving wanderer can step onto one and die there: 18 of 5,000 deaths in
+  the no-flora scenario, hence 4,982 corpse sites.
+- **No entity carries a corpse at the default genes.** Pick-up scores *carry_corpse* × (1 − h)
+  against rest's *rest* × (1 − h), and 0.15 < 0.5, so rest always wins (0 pickups in the
+  scenarios). Carrying works (tested) and becomes reachable once Phase 4 varies the weights.
+
+### Derived energy costs (spec §4.1.1)
+
+- **Genome 13 → 11 genes.** `base_energy_burn` and `move_energy_cost` were genes, so under
+  mutation lower values would have been free upgrades (spec principle 4). They are now derived
+  from the other genes when the genome is fixed (at spawn; at birth from Phase 4), stored in SoA
+  arrays `base_burn` and `move_cost` (plus `rest_burn` = base × `entity.rest_burn_factor` and
+  `sense_burn`), and never recomputed per tick:
+  - base_burn = burn_floor + k_capacity × max_energy / 1000 + k_speed × move_speed² + k_digest ×
+    digest_efficiency + k_memory × memory slots + k_hp × max_hp / 100
+  - sense_burn = sense_cost_per_cell × (2 × sense_radius + 1)²
+  - move_cost = move_cost_floor + move_cost_k_speed × move_speed²
+- **Calibrated to the old defaults**, so a default genome behaves exactly as before:
+  base_burn 0.600, move_cost 0.400, sense_burn 0.100 per tick (tested; the 512² checkpoint run's
+  world and behaviour hashes are unchanged). Coefficients (all `tuned: false`, every k > 0):
+
+  | parameter | value | at the default genome |
+  |---|---:|---:|
+  | `entity.burn_floor` | 0.16 | 0.16 |
+  | `entity.burn_k_capacity` | 0.1 per 1000 max_energy | 0.10 |
+  | `entity.burn_k_speed` | 0.25 per speed² | 0.09 |
+  | `entity.burn_k_digest` | 0.15 per unit | 0.12 |
+  | `entity.burn_k_memory` | 0.02 per slot | 0.08 |
+  | `entity.burn_k_hp` | 0.05 per 100 hp | 0.05 |
+  | `entity.sense_cost_per_cell` | 0.1 / 121 = 0.000826… | 0.100 at r = 5 |
+  | `entity.move_cost_floor` | 0.22 | 0.22 |
+  | `entity.move_cost_k_speed` | 0.5 per speed² | 0.18 |
+
+  The split is a placeholder: the floor is the cost of being alive at all, speed costs both at
+  rest and per cell, and the gene terms are sized so a gene at its maximum costs noticeably more
+  (speed 1.0: base burn +0.16 and move cost +0.32 per cell; max_energy 5000: +0.4).
+- **Sense cost is per scanned cell, (2r + 1)², not linear in the radius,** because the benefit
+  (cells seen) scales with area. At r = 5 it equals the old linear cost (0.02 × 5); r = 8 costs
+  0.24 instead of 0.16.
+- **Memory and sense costs use what the entity actually gets**: the rounded, clamped memory
+  capacity and sense radius, not the raw gene floats.
+- **Each cost is summed in floating point from the gene values and rounded once to milli**, at
+  spawn. Same inputs give the same integer on every run; nothing per tick touches floats.
+- **The inspector shows the derived costs** (base, resting, sense, move) under the genome.
+- **move_speed default stays 0.6** (cells per tick on cost-1 terrain), the value the costs are
+  calibrated at. The spec's registry example (§12) said 1.0 (min 0.1, max 10); it and §5.1 now say
+  0.6 (min 0.05, max 1.0), matching `genes.json`.
+- **Save format version 3 is redefined** (it was never committed): the entity blocks include
+  `entity.base_burn` (was `entity.burn`), `rest_burn`, `sense_burn` and `move_cost`, and the
+  genome blocks have 11 genes. No migration. Versions 1 and 2 still load.
+- **Version 1 loads were leaving spike ids in the occupancy layer** (found by a new test that writes
+  real pre-v3 layouts). The clear was `(world.occupancy as PackedInt32Array).fill(0)`, and in Godot
+  4.6 `(x as PackedInt32Array).fill()` fills a temporary copy. It now goes through a typed local
+  variable, which writes through. That was the only mutating call on an `as` cast in the code.
+
+### Other
+
+- **Perf gate: stay on GDScript.** 100k entities with mature flora run at 17.5 ticks/s (summer,
+  after the decide optimisation and the follow-up fixes; 9.9 before the optimisation), and 16.1
+  to 16.2 with a hungry population (2× base burn, or flora thinned to 10%); details in `PERF.md`.
+  The gate uses founder-spawned populations, a 2,000-tick entity warmup (500 was too short for the
+  hunger cycle to settle), and `tools/profile.gd --season` so every row is measured in the same
+  season.
+- **`env.bands` is structural** (Phase 3 scope 13): it changes results for a seed, so it locks with
+  the world (tested).
+- **The HUD and inspector never read live sim arrays.** The inspector asks the runner for an entity
+  probe (one-shot, answered between ticks), and spawning/clearing founders goes through
+  `SimRunner.submit()`.
+- **The inspector marks the decided action** (the argmax of the stored scores, same tie rule as
+  decide), and shows the current action beside it. They differ once an action ends between
+  decisions (sated, plant gone) or is given up (stuck): marking the current action would then
+  point at a score that did not win.
+- **New parameters (all `tuned: false`):**
+  - `entity.*`: decision_interval, memory_slots, perception_block, memory_days, memory_trust,
+    bite_biomass, rest_burn_factor, food_rate_scale, wander_base, wander_hunger,
+    path_cost_weight, stuck_ticks, crowd_ref, crowd_weight, search_hunger, carry_speed_factor,
+    carry_move_cost_factor, carry_days, drop_weight, birth_sex_ratio
+  - `entity.*` derived-cost coefficients: burn_floor, burn_k_capacity, burn_k_speed, burn_k_digest,
+    burn_k_memory, burn_k_hp, sense_cost_per_cell, move_cost_floor, move_cost_k_speed (an earlier
+    draft's linear `entity.sense_cost` is replaced by sense_cost_per_cell)
+  - `corpse.*`: edible, mass, nutrition_per_mass, bite_mass, decay_days, soil_nutrients_per_mass,
+    spread_radius, update_interval
+  - `founders.*`: groups, size_min, size_max, spacing, spread, centre_min_fertility, energy_min,
+    gene_jitter
+  - `ui.entity_color_by_sex`
+  - Removed: `spike.*`.
+
+### Renderer and UI
+
+- **Entities are GPU points**: one mesh with a vertex per slot. Position, energy and max energy
+  are read from RGBA8 textures holding the raw int32 snapshot arrays, and sex from an R8
+  texture; dead slots (x = -1) are hidden. Colour by energy (red to yellow to green) or by sex,
+  from the HUD or `ui.entity_color_by_sex`.
+- **Clicking a cell** (press and release within 5 px, brush off) probes it. If an entity is
+  there, the inspector follows it by (slot, generation) and refreshes at `ui.hud_refresh_hz`.
+
+### Tooling
+
+- `tools/profile.gd` replaces `tools/profile_spike.gd`: real entities from founder groups, an
+  optional environment warmup, and a per-phase breakdown.
+- `tools/decide_bench.gd`: single-thread µs per decision on a saved steady state, plus a hash of
+  decide's output so optimisations can be checked for identical decisions.
+- `tools/perception_bench.gd`: the hash-versus-grid measurement.
+- `tools/entity_report.gd`: the abundant and scarce acceptance scenarios (CSV, SVG, summary).
+- `tools/determinism_check.gd` and `tools/thread_hash_check.gd` take founders.
+- App autotest `--autotest-inspect`: selects an entity through the click signal, checks the
+  inspector's decided action against its scores, screenshots both colour modes, follows the
+  entity, then clears and respawns founders through the HUD actions.

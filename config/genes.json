@@ -1,0 +1,28 @@
+{
+	"version": 2,
+	"note": "Genome = one float per gene, in this order. Phase 3: stats are fixed (founders get the defaults, plus optional founders.gene_jitter); Phase 4 adds mutation. Integer genes are rounded when used. Energy costs are not genes: base burn, sense burn and move cost are derived from these genes (spec 4.1.1, entity.burn_* / sense_cost_per_cell / move_cost_* params) when the genome is fixed. `cost` names the derived term each gene feeds (spec principle 4).",
+	"genes": [
+		{ "name": "max_energy", "group": "metabolism", "min": 200, "max": 5000, "default": 1000,
+		  "desc": "Energy capacity.", "cost": "Base burn: + entity.burn_k_capacity x (max_energy / 1000).", "tuned": false },
+		{ "name": "food_needed_to_sate", "group": "metabolism", "min": 0.3, "max": 1.0, "default": 0.9,
+		  "desc": "Share of max_energy at which the entity is sated and stops eating; hunger is measured against it.", "cost": "Higher means more time spent eating.", "tuned": false },
+		{ "name": "digest_efficiency", "group": "metabolism", "min": 0.1, "max": 1.0, "default": 0.8,
+		  "desc": "Energy gained = item nutrition x this.", "cost": "Base burn: + entity.burn_k_digest x digest_efficiency.", "tuned": false },
+		{ "name": "move_speed", "group": "locomotion", "min": 0.05, "max": 1.0, "default": 0.6,
+		  "desc": "Cells per tick on cost-1 terrain.", "cost": "Base burn: + entity.burn_k_speed x move_speed^2; move cost per cell: entity.move_cost_floor + entity.move_cost_k_speed x move_speed^2.", "tuned": false },
+		{ "name": "sense_radius", "group": "perception", "min": 1, "max": 16, "default": 5,
+		  "desc": "Chebyshev radius (cells) of the perception scan.", "cost": "Sense burn per tick: entity.sense_cost_per_cell x (2 x sense_radius + 1)^2 (every scanned cell).", "tuned": false },
+		{ "name": "memory_capacity", "group": "perception", "min": 1, "max": 8, "default": 4,
+		  "desc": "Remembered locations kept (at most entity.memory_slots).", "cost": "Base burn: + entity.burn_k_memory x memory slots.", "tuned": false },
+		{ "name": "forage", "group": "activity", "min": 0.0, "max": 3.0, "default": 1.0,
+		  "desc": "Weight of eating and of seeking remembered food.", "cost": "Behavioural weight; no direct energy cost.", "tuned": false },
+		{ "name": "rest", "group": "activity", "min": 0.0, "max": 3.0, "default": 0.5,
+		  "desc": "Weight of resting (lower burn, no movement) when not hungry.", "cost": "Behavioural weight; no direct energy cost.", "tuned": false },
+		{ "name": "explore", "group": "activity", "min": 0.0, "max": 3.0, "default": 0.35,
+		  "desc": "Weight of wandering, which rises with hunger when no food is in sight.", "cost": "Movement energy while wandering.", "tuned": false },
+		{ "name": "carry_corpse", "group": "activity", "min": 0.0, "max": 3.0, "default": 0.15,
+		  "desc": "Weight of picking up and carrying a corpse when not hungry.", "cost": "Carrying slows movement (entity.carry_speed_factor) and costs entity.carry_move_cost_factor x the move cost per cell.", "tuned": false },
+		{ "name": "max_hp", "group": "combat", "min": 10, "max": 1000, "default": 100,
+		  "desc": "Hit points. Unused until combat (Phase 9).", "cost": "Base burn: + entity.burn_k_hp x (max_hp / 100).", "tuned": false }
+	]
+}

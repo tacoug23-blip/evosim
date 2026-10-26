@@ -13,7 +13,7 @@ func test_defaults_load_and_are_complete() -> void:
 	check_eq(p.untuned_ids().size(), p.ids().size(), "every Phase 1 value is a placeholder")
 	check_eq(p.get_int("world.width"), 4096, "default width")
 	check(p.groups().has("world.terrain"), "groups listed")
-	check(p.ids_in_group("spike").has("spike.perception_radius"), "group membership")
+	check(p.ids_in_group("entity").has("entity.decision_interval"), "group membership")
 
 
 func test_typed_access() -> void:
@@ -39,8 +39,8 @@ func test_set_value_validates_and_clamps() -> void:
 	check(not p.set_value("no.such.param", 1), "unknown id refused")
 	var seen := []
 	p.value_changed.connect(func(id: String, v: Variant) -> void: seen.append([id, v]))
-	p.set_value("spike.perception_radius", 4)
-	check_eq(seen, [["spike.perception_radius", 4]], "value_changed emitted")
+	p.set_value("entity.decision_interval", 4)
+	check_eq(seen, [["entity.decision_interval", 4]], "value_changed emitted")
 
 
 func test_structural_lock() -> void:
@@ -48,6 +48,9 @@ func test_structural_lock() -> void:
 	p.quiet = true
 	p.lock_structural()
 	check(not p.set_value("world.width", 512), "structural param refused while locked")
+	check(p.is_structural("env.bands"), "env.bands is structural (it changes results for a seed)")
+	check(not p.set_value("env.bands", 32), "env.bands refused while locked")
+	check_eq(p.get_int("env.bands"), 64, "env.bands unchanged while locked")
 	check_eq(p.get_int("world.width"), 4096, "locked value unchanged")
 	check(p.set_value("sim.base_tps", 5.0), "non-structural param still changes")
 	var snap: Dictionary = p.snapshot()
@@ -63,7 +66,7 @@ func test_presets() -> void:
 	check(p.list_presets().has("small_world"), "small_world listed")
 	check(p.apply_preset("small_world"), "preset applies")
 	check_eq(p.get_int("world.width"), 1024, "preset value")
-	check_eq(p.get_int("spike.perception_radius"), 8, "untouched value keeps default")
+	check_eq(p.get_int("entity.decision_interval"), 10, "untouched value keeps default")
 	check(not p.apply_preset("no_such_preset"), "unknown preset refused")
 
 
